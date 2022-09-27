@@ -21,6 +21,9 @@ namespace EFCore.CodeFirst.DataAccessLayer
         //Nugget paketleri yüklenmelidir ve aşağıdaki yol izlenmelidir.
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
+            //Console alt yapısı olduğu için bu method çağrılır. MVC ve CORE projelerinde otomatik algılanır
+            DbContextInitializer.Build();
+            //appsettings ten okumak için kullanılır
             optionsBuilder.UseSqlServer(DbContextInitializer.Configuration.GetConnectionString("SqlCon"));
         }
     }
