@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace EFCore.CodeFirst.Entities
 {
-    public class Product
+    public class Product:_BaseEntity
     {
         public int Id { get; set; }
         public string Name { get; set; }
