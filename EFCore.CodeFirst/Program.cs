@@ -100,25 +100,38 @@ using (var _context = new AppDbContext())
 
     //First methodu, bestpracties için direkt olarak Id ile işlem yapmak için kullanılır. Yalnızca bir kayıt döndürür. İlgili Id li kayıt yoksa exception fırlatır
     var productFirst = _context.Products.First(x=>x.Id == 1);
-    Console.WriteLine(productFirst);
+    Console.WriteLine($"Id:{productFirst.Id}, Name:{productFirst.Name}, Stok:{productFirst.Stock}, Barcode: {productFirst.Barcode}");
 
     //FirstOrDefault methodu Yalnızca bir kayıt döndürür. İlgili parametreli kayıt yoksa null döner
     //null dönem durumunda null yerine ilk kayıdı getirmesini istersek virgül ile ilgili koşulu belirtebilirz
-    var productFirstOrDefault = _context.Products.FirstOrDefault(x => x.Id == 1, _context.Products.First(x=>x.Id == 1));
-    Console.WriteLine(productFirstOrDefault);
+    var productFirstOrDefault = _context.Products.FirstOrDefault(x => x.Id == 2);
+    Console.WriteLine($"Id:{productFirstOrDefault.Id}, Name:{productFirstOrDefault.Name}, Stok:{productFirstOrDefault.Stock}, Barcode: {productFirstOrDefault.Barcode}");
 
     //SingleAsync methodu asenkron şekilde tek bir kayıt getirir. Db de ilgili parametreyi karşılayan birden fazla kayıt varsa exceptin fırlatır.
     //Şuan Id si 1den büyük birden fazla kayıt olduğu için exception fırlatacaktır
-    var productSingleAsync = await _context.Products.SingleAsync(x => x.Id >= 1);
-    Console.WriteLine(productSingleAsync);
+    var productSingleAsync = await _context.Products.SingleAsync(x => x.Id == 3);
+    Console.WriteLine($"Id:{productSingleAsync.Id}, Name:{productSingleAsync.Name}, Stok:{productSingleAsync.Stock}, Barcode: {productSingleAsync.Barcode}");
 
-    //SingleOrDefault tek bir data getirmek için kullanılır. İlgili parametre şartını karşılayan birden fazla data varsa exception fırlatır.
+    //SingleOrDefault tek bir data getirmek için kullanılır. İlgili parametre şartını karşılayan birden fazla data varsa exception fırlatır. Sonuç yoksa null döner
     //Bu haliyle Id si 1 den büyük birden fazla kayıt olduğu için exception fırlatacaktır.
-    var productSingleOrDefault =  _context.Products.SingleOrDefault(x => x.Id >= 1);
-    Console.WriteLine(productSingleOrDefault);
+    var productSingleOrDefault =  _context.Products.SingleOrDefault(x => x.Id == 4);
+    Console.WriteLine($"Id:{productSingleOrDefault.Id}, Name:{productSingleOrDefault.Name}, Stok:{productSingleOrDefault.Stock}, Barcode: {productSingleOrDefault.Barcode}");
 
-    var productSingle = _context.Products.Single(x => x.Id == 1);
-    Console.WriteLine(productSingle);
+    //Single tek bir data getirmek için kullanılır. İlgili parametre şartını karşılayan birden fazla data varsa exception fırlatır.
+    var productSingle = _context.Products.Single(x => x.Id == 5);
+    Console.WriteLine($"Id:{productSingle.Id}, Name:{productSingle.Name}, Stok:{productSingle.Stock}, Barcode: {productSingle.Barcode}");
+
+    //Where ilgili parametre şartını karşılayan bir veya birden fazla sonuç döndürür. Kayıt yoksa null döner
+    var produtsWhere = _context.Products.Where(x => x.Id >= 1).ToListAsync();
+    produtsWhere.Result.ForEach(p =>
+    {
+        Console.WriteLine($"Id: {p.Id}, Name: {p.Name}, Stock: {p.Stock}, Barcode: {p.Barcode}");
+    });
+
+    //Find methodu primaryKey ler içerisinde otomatik olarak sorgu yapmak için kullanılır. Birden fazla PrimaryKey durumunda virgül ile parametre sayısı arttırılabilir.
+    //Sonuç bulunmazsa null döner
+    var produtFind = await _context.Products.FindAsync(1);
+    Console.WriteLine($"Id: {produtFind.Id}, Name: {produtFind.Name}");
 }
 #endif
 
