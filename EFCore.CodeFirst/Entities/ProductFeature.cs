@@ -17,9 +17,6 @@ namespace EFCore.CodeFirst.Entities
 
         public string Color { get; set; }
 
-        //Parent olduğunu belirtmek için child property de ProductId belirtiyoruz
-        public int ProductId { get; set; }
-
         //Product Parent property
         public Product Product { get; set; }
 

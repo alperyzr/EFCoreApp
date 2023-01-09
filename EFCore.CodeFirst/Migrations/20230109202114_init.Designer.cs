@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace EFCore.CodeFirst.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20221205194128_UpdateProduct")]
-    partial class UpdateProduct
+    [Migration("20230109202114_init")]
+    partial class init
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -56,7 +56,7 @@ namespace EFCore.CodeFirst.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Category");
+                    b.ToTable("Categories");
                 });
 
             modelBuilder.Entity("EFCore.CodeFirst.Entities.Product", b =>
@@ -71,6 +71,7 @@ namespace EFCore.CodeFirst.Migrations
                         .HasColumnType("int");
 
                     b.Property<int?>("CategoryId")
+                        .IsRequired()
                         .HasColumnType("int");
 
                     b.Property<int?>("CreatedBy")
@@ -110,18 +111,75 @@ namespace EFCore.CodeFirst.Migrations
                     b.ToTable("Products");
                 });
 
+            modelBuilder.Entity("EFCore.CodeFirst.Entities.ProductFeature", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Color")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Height")
+                        .HasColumnType("int");
+
+                    b.Property<bool?>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool?>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Width")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ProductFeatures");
+                });
+
             modelBuilder.Entity("EFCore.CodeFirst.Entities.Product", b =>
                 {
                     b.HasOne("EFCore.CodeFirst.Entities.Category", "Category")
                         .WithMany("Products")
-                        .HasForeignKey("CategoryId");
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Category");
+                });
+
+            modelBuilder.Entity("EFCore.CodeFirst.Entities.ProductFeature", b =>
+                {
+                    b.HasOne("EFCore.CodeFirst.Entities.Product", "Product")
+                        .WithOne("ProductFeature")
+                        .HasForeignKey("EFCore.CodeFirst.Entities.ProductFeature", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
                 });
 
             modelBuilder.Entity("EFCore.CodeFirst.Entities.Category", b =>
                 {
                     b.Navigation("Products");
+                });
+
+            modelBuilder.Entity("EFCore.CodeFirst.Entities.Product", b =>
+                {
+                    b.Navigation("ProductFeature")
+                        .IsRequired();
                 });
 #pragma warning restore 612, 618
         }

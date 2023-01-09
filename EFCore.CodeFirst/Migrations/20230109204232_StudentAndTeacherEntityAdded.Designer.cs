@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace EFCore.CodeFirst.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20230103205534_ProductFeatureAdded")]
-    partial class ProductFeatureAdded
+    [Migration("20230109204232_StudentAndTeacherEntityAdded")]
+    partial class StudentAndTeacherEntityAdded
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -114,10 +114,7 @@ namespace EFCore.CodeFirst.Migrations
             modelBuilder.Entity("EFCore.CodeFirst.Entities.ProductFeature", b =>
                 {
                     b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
 
                     b.Property<string>("Color")
                         .IsRequired()
@@ -138,9 +135,6 @@ namespace EFCore.CodeFirst.Migrations
                     b.Property<bool?>("IsDeleted")
                         .HasColumnType("bit");
 
-                    b.Property<int>("ProductId")
-                        .HasColumnType("int");
-
                     b.Property<int?>("UpdatedBy")
                         .HasColumnType("int");
 
@@ -152,10 +146,95 @@ namespace EFCore.CodeFirst.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ProductId")
-                        .IsUnique();
-
                     b.ToTable("ProductFeatures");
+                });
+
+            modelBuilder.Entity("EFCore.CodeFirst.Entities.Student", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
+
+                    b.Property<int>("Age")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool?>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool?>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Students");
+                });
+
+            modelBuilder.Entity("EFCore.CodeFirst.Entities.Teacher", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
+
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool?>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool?>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Teachers");
+                });
+
+            modelBuilder.Entity("StudentTeacher", b =>
+                {
+                    b.Property<int>("StudentsId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TeachersId")
+                        .HasColumnType("int");
+
+                    b.HasKey("StudentsId", "TeachersId");
+
+                    b.HasIndex("TeachersId");
+
+                    b.ToTable("StudentTeacher");
                 });
 
             modelBuilder.Entity("EFCore.CodeFirst.Entities.Product", b =>
@@ -173,11 +252,26 @@ namespace EFCore.CodeFirst.Migrations
                 {
                     b.HasOne("EFCore.CodeFirst.Entities.Product", "Product")
                         .WithOne("ProductFeature")
-                        .HasForeignKey("EFCore.CodeFirst.Entities.ProductFeature", "ProductId")
+                        .HasForeignKey("EFCore.CodeFirst.Entities.ProductFeature", "Id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Product");
+                });
+
+            modelBuilder.Entity("StudentTeacher", b =>
+                {
+                    b.HasOne("EFCore.CodeFirst.Entities.Student", null)
+                        .WithMany()
+                        .HasForeignKey("StudentsId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("EFCore.CodeFirst.Entities.Teacher", null)
+                        .WithMany()
+                        .HasForeignKey("TeachersId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("EFCore.CodeFirst.Entities.Category", b =>
