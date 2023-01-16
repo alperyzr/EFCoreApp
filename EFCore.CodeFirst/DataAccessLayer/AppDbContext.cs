@@ -44,8 +44,14 @@ namespace EFCore.CodeFirst.DataAccessLayer
             modelBuilder.Entity<Product>().Property(x => x.Name).IsRequired().HasMaxLength(100).IsFixedLength();
 
             //İlişkili tablolarda her zaman has ile başlanacak
-            //Bir kategorinin birden fazla productı, bir productın bir categorysi olur anlamında kullanılıp product içerisindeki CAtegoryId foreing key olarak belirtildi
-            modelBuilder.Entity<Category>().HasMany(x => x.Products).WithOne(x=>x.Category).HasForeignKey(x=>x.CategoryId);
+            //Bir kategorinin birden fazla productı, bir productın bir categorysi olur anlamında kullanılıp product içerisindeki
+            //CategoryId foreing key olarak belirtildi           
+            //OnDelete methodu içerisinde DeleteBahavior Enumını alır. Bu method herhangi bir kategori silindiği zaman child tablolarında nasıl aksiyon
+            //alacağına karar verir. Cascade default davranıştır. 1 id li kategori silindiği zaman product tablosundaki bütün 1 kategori İd li kayıtları siler.
+            //Restrict enumı 1 id li kategoride product varsa kategoriyi silmeye izin vermez
+            //SetNull enumu product tablosundaki kategori Idleri null a çeker
+            //NoAction enum ı ise hiç bir şey yapmamasını, sql tarafında kullanıcının halledeceğini belirtir
+            modelBuilder.Entity<Category>().HasMany(x => x.Products).WithOne(x=>x.Category).HasForeignKey(x=>x.CategoryId).OnDelete(DeleteBehavior.Restrict);
 
             //ProductFeature tablosundaki Id alanı hem Primary Key, hemde Foreign Key olarak ayarladık.
             //Böylece İlgili Product İd si olmayan bir kayıt eklenemez ve fazla kolon kullanımından kurtulmuş olduk
@@ -53,6 +59,8 @@ namespace EFCore.CodeFirst.DataAccessLayer
 
             //Bir öğrencinin birden fazla öğretmeni, bir öğretmenin de birden fazla öğrencisi olabilir.
             //Bu sebepten dolayı çoka-çok ilişki kullanıyoruz.
+            //EFCore 5.0 versiyonununda FluentAPI ile bu kısımları oluşturmadan ilişki kurulduğunda
+            //EFCore otomatik olarak iki tablonun birleşim tablosunu oluşturur
             modelBuilder.Entity<Student>().HasMany(x => x.Teachers).WithMany(x => x.Students).UsingEntity<Dictionary<string, object>>(
                 "StudentTeacher",
                 x => x.HasOne<Teacher>().WithMany().HasForeignKey("TeacherId").HasConstraintName("FK_TeacherId"),

@@ -1,6 +1,6 @@
 ﻿
 //#define ile bir değişken tanımlamamıza ve aşağıdaki if komutları ile hangi using in çalışması gerektiğinin kontrolü yapılr
-#define EntityFrameWorkCoreMethods
+#define ManyToManyDataAdded
 
 using EFCore.CodeFirst.DataAccessLayer;
 using EFCore.CodeFirst.Entities;
@@ -132,6 +132,156 @@ using (var _context = new AppDbContext())
     //Sonuç bulunmazsa null döner
     var produtFind = await _context.Products.FindAsync(1);
     Console.WriteLine($"Id: {produtFind.Id}, Name: {produtFind.Name}");
+}
+#elif OneToManyDataAdded //Bire Çok İlişki
+using (var _context = new AppDbContext())
+{
+    //Kategori eklemek için
+    var category = new Category()
+    {
+        Name = "Kalemler",
+        CreatedDate= DateTime.Now,
+        IsActive= true, 
+        IsDeleted= false,
+        
+    };
+
+    //Product Eklemek için
+    var product = new Product()
+    {
+        Name = "Kalem 1",
+        Price = 100,
+        Stock = 200,
+        Barcode = 123,
+        Category= category,
+        CreatedDate= DateTime.Now,
+        IsActive= true,
+        IsDeleted= false,
+        
+    };
+
+    //ProductFeature Eklemek İçin
+    var productFeature = new ProductFeature()
+    {
+        Width = 200,
+        Height = 200,
+        IsDeleted = false,
+        CreatedDate = DateTime.Now,
+        IsActive = true,
+        Color = "red",
+        Product = product,
+    };
+
+    //db ye yansıtmak için
+    //EfCore un yeni süürmlerinde child e eklersek otomatik olarak ilgili parentlerı da ekler. Örnek product ve category gibi
+    _context.Add(productFeature);
+    _context.SaveChanges();
+    Console.WriteLine("Kaydedildi");
+    Console.ReadKey();
+}
+#elif ManyToManyDataAdded //Çoka Çok ilişki
+using (var _context = new AppDbContext())
+{
+    //Öğrenciye öğretmenler Ekleme
+    var student = new Student()
+    {
+        Name = "Alper",
+        Age = 25,
+        CreatedDate = DateTime.Now,
+        IsActive = true,
+        IsDeleted = false,
+        Teachers = new List<Teacher>()
+        {
+            new Teacher()
+            {
+                Name = "Alper Öğretmen",
+                CreatedDate= DateTime.Now,
+                IsActive= true,
+                IsDeleted= false,
+            },
+            new Teacher()
+            {
+                Name = "Mehmet Öğretmen",
+                CreatedDate = DateTime.Now,
+                IsActive = true,
+                IsDeleted = false,
+            },
+            new Teacher()
+            {
+                Name = "Özlem Öğretmen",
+                CreatedDate = DateTime.Now,
+                IsActive = true,
+                IsDeleted = false,
+            }
+        }
+
+    };
+
+    //Öğretmene Öğrenciler Ekleme
+    var teacher = new Teacher()
+    {
+        Name = "Hasan Öğretmen",
+        CreatedDate = DateTime.Now,
+        IsActive = true,
+        IsDeleted = false,
+        Students = new List<Student>()
+        {
+           new Student()
+           {
+               IsDeleted= false,
+               IsActive= true,
+               CreatedDate= DateTime.Now,
+               Name = "Miray",
+               Age= 19,
+           },
+           new Student ()
+           {
+               IsDeleted= false,
+               IsActive= true,
+               CreatedDate= DateTime.Now,
+               Name = "Arzu",
+               Age= 20,
+           },
+           new Student ()
+           {
+               IsDeleted= false,
+               IsActive= true,
+               CreatedDate= DateTime.Now,
+               Name = "Hasan",
+               Age= 21,
+           }
+        }
+    };
+
+    //var olan öğretmene öğrenci ekleme
+    //Alper Öğretmeni çağırıp memory de track edildiği için alt kısımda sadece SaceCganges methodunu çağırıyoruz.
+    //Çünkü zaten memory de track edilmiş bir datayı tekrar eklemeye çalışırsak hata alırız
+    var getTeacher = _context.Teachers.Where(x => x.Name.Contains("Alper Öğretmen")).FirstOrDefault();
+    getTeacher.Students = new List<Student>()
+    {
+        new Student()
+        {
+            Name = "Fatma",
+            CreatedDate = DateTime.Now,
+            IsActive = true,
+            Age= 19,
+            IsDeleted= false,
+        },
+        new Student()
+        {
+            Name = "Ayşe",
+            CreatedDate = DateTime.Now,
+            IsActive = true,
+            Age= 19,
+            IsDeleted= false,
+        }
+    };
+
+    //_context.Add(student);
+    //_context.Add(teacher);
+   
+    _context.SaveChanges();
+    Console.WriteLine("Kaydedildi");
 }
 #endif
 

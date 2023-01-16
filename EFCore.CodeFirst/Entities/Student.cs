@@ -15,5 +15,10 @@ namespace EFCore.CodeFirst.Entities
         public int Age { get; set; }
 
         public List<Teacher> Teachers { get; set; }
+      
+        public Student()
+        {
+            Teachers = new List<Teacher>();
+        }
     }
 }
