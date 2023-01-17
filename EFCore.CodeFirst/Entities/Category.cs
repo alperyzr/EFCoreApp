@@ -9,8 +9,13 @@ namespace EFCore.CodeFirst.Entities
     public class Category: _BaseEntity
     {
         public int Id { get; set; }
+       
         public string Name { get; set; }
-        public List<Product> Products { get; set; }
+
+        //LazyLoading için virtual kullanılmalıır
+        //public virtual List<Product> Products { get; set; }
+        public virtual List<Product> Products { get; set; }
+
         public Category()
         {
             Products= new List<Product>();

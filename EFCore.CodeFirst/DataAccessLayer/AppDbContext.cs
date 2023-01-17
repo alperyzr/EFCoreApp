@@ -1,6 +1,7 @@
 ﻿using EFCore.CodeFirst.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,6 +18,9 @@ namespace EFCore.CodeFirst.DataAccessLayer
         public DbSet<ProductFeature> ProductFeatures { get; set; }
         public DbSet<Teacher> Teachers { get; set; }
         public DbSet<Student> Students { get; set; }
+        public DbSet<Manager> Managers { get; set; }
+        public DbSet<Employee> Employees { get; set; }
+        public DbSet<_BasePerson> BasePeople { get; set; }
 
 
         //Db yolunu appsettingsten okuyabilmek için;
@@ -28,7 +32,11 @@ namespace EFCore.CodeFirst.DataAccessLayer
         {
             //Console alt yapısı olduğu için bu method çağrılır. MVC ve CORE projelerinde otomatik algılanır
             DbContextInitializer.Build();
+
             //appsettings ten okumak için kullanılır
+            //LogTo methodu da lazyLoading ile beraber yapılan işlemlerde Console log bilgilerini yazdırmak için kullanılır
+            //UseLazyLoadingProxies methodu kurulan nugget paketten sonra appsettingse eklenerek lazyLoading yapmamıza imkan tanır
+            //optionsBuilder.LogTo(Console.WriteLine, LogLevel.Information).UseLazyLoadingProxies().UseSqlServer(DbContextInitializer.Configuration.GetConnectionString("SqlCon"));
             optionsBuilder.UseSqlServer(DbContextInitializer.Configuration.GetConnectionString("SqlCon"));
         }
 
@@ -42,6 +50,9 @@ namespace EFCore.CodeFirst.DataAccessLayer
             //Name alanının required olduğu belirtilitr
             //100 karakter sabit bir değer alması için İsFİxed Methodu kullanılır
             modelBuilder.Entity<Product>().Property(x => x.Name).IsRequired().HasMaxLength(100).IsFixedLength();
+
+            //decimal değerin toplam kaç karakter olup, virgülden sonra kaç karakter alacağını belirten fluentAPI tarafındaki gösterimi
+            modelBuilder.Entity<Product>().Property(x => x.Price).HasPrecision(18, 2);
 
             //İlişkili tablolarda her zaman has ile başlanacak
             //Bir kategorinin birden fazla productı, bir productın bir categorysi olur anlamında kullanılıp product içerisindeki
@@ -66,6 +77,13 @@ namespace EFCore.CodeFirst.DataAccessLayer
                 x => x.HasOne<Teacher>().WithMany().HasForeignKey("TeacherId").HasConstraintName("FK_TeacherId"),
                 x => x.HasOne<Student>().WithMany().HasForeignKey("StudentId").HasConstraintName("FK_StudentId")
                 );
+
+            //TPT Table-Per-Type
+            modelBuilder.Entity<Employee>().ToTable("Employees");
+            modelBuilder.Entity<Manager>().ToTable("Managers");
+            modelBuilder.Entity<_BasePerson>().ToTable("BasePeople");
+
+
             base.OnModelCreating(modelBuilder);
         }
     }

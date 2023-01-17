@@ -4,6 +4,7 @@ using EFCore.CodeFirst.DataAccessLayer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace EFCore.CodeFirst.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20230117151839_ManagerEntityEmployeeEntityAndBasePersonEntityAdded")]
+    partial class ManagerEntityEmployeeEntityAndBasePersonEntityAdded
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -237,6 +240,10 @@ namespace EFCore.CodeFirst.Migrations
                     b.Property<int>("Age")
                         .HasColumnType("int");
 
+                    b.Property<string>("Discriminator")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("FirstName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -247,9 +254,11 @@ namespace EFCore.CodeFirst.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("BasePeople", (string)null);
+                    b.ToTable("BasePeople");
 
-                    b.UseTptMappingStrategy();
+                    b.HasDiscriminator<string>("Discriminator").HasValue("_BasePerson");
+
+                    b.UseTphMappingStrategy();
                 });
 
             modelBuilder.Entity("StudentTeacher", b =>
@@ -274,7 +283,7 @@ namespace EFCore.CodeFirst.Migrations
                     b.Property<int>("Salary")
                         .HasColumnType("int");
 
-                    b.ToTable("Employees", (string)null);
+                    b.HasDiscriminator().HasValue("Employee");
                 });
 
             modelBuilder.Entity("EFCore.CodeFirst.Entities.Manager", b =>
@@ -284,7 +293,7 @@ namespace EFCore.CodeFirst.Migrations
                     b.Property<int>("Grade")
                         .HasColumnType("int");
 
-                    b.ToTable("Managers", (string)null);
+                    b.HasDiscriminator().HasValue("Manager");
                 });
 
             modelBuilder.Entity("EFCore.CodeFirst.Entities.Product", b =>
@@ -324,24 +333,6 @@ namespace EFCore.CodeFirst.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("FK_TeacherId");
-                });
-
-            modelBuilder.Entity("EFCore.CodeFirst.Entities.Employee", b =>
-                {
-                    b.HasOne("EFCore.CodeFirst.Entities._BasePerson", null)
-                        .WithOne()
-                        .HasForeignKey("EFCore.CodeFirst.Entities.Employee", "Id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("EFCore.CodeFirst.Entities.Manager", b =>
-                {
-                    b.HasOne("EFCore.CodeFirst.Entities._BasePerson", null)
-                        .WithOne()
-                        .HasForeignKey("EFCore.CodeFirst.Entities.Manager", "Id")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
                 });
 
             modelBuilder.Entity("EFCore.CodeFirst.Entities.Category", b =>

@@ -14,8 +14,10 @@ namespace EFCore.CodeFirst.Entities
        
         public int Age { get; set; }
 
+        //LazyLoading yapılacağı zaman virtul kullanılmalıdır
+        //public virtual List<Teacher> Teachers { get; set; }
         public List<Teacher> Teachers { get; set; }
-      
+
         public Student()
         {
             Teachers = new List<Teacher>();

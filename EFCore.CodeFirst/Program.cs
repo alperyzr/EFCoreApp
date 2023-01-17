@@ -1,6 +1,6 @@
 ﻿
 //#define ile bir değişken tanımlamamıza ve aşağıdaki if komutları ile hangi using in çalışması gerektiğinin kontrolü yapılr
-#define ManyToManyDataAdded
+#define TPT
 
 using EFCore.CodeFirst.DataAccessLayer;
 using EFCore.CodeFirst.Entities;
@@ -282,6 +282,174 @@ using (var _context = new AppDbContext())
    
     _context.SaveChanges();
     Console.WriteLine("Kaydedildi");
+}
+#elif EagerLoading //Örneğin bir categoriye bağlı category ve productları çekmek istediğimizde kullanılır
+using (var _context = new AppDbContext())
+{
+    //Include method category çekerken, bağlı olduğu pğroductlarıda çeker. Böylece EagerLoading yapılmış olur
+    //ThenInclude ise bir product a bağlı ProductFeatureları getirir.
+    //Böylece parent category den en alt child tablosuna kadar tek bir sorgu ile çekebiliriz
+    //Önce Include methodunu kullandıktan sonra child tablolarda ne kadar child entity varsa onlara ulaşmak için istediğimiz kadar ThenInclude kullanabilirz.
+    //ThenInclude dan sonra tekrar Include yazarsak, artık parente döner ve Category nin altında başka child aramaya başlar.
+    var categoryWithProducts = _context.Categories.Include(x => x.Products).ThenInclude(x => x.ProductFeature).First();
+    Console.WriteLine("Kategori: "+categoryWithProducts.Name);
+    categoryWithProducts.Products.ForEach(x => Console.WriteLine("Product Name: "+x.Name));
+    categoryWithProducts.Products.ForEach(x => Console.WriteLine("Product Feature: "+x.ProductFeature.Width + " " + x.ProductFeature.Height));
+
+
+
+    //Tamtersi işlem Childtan Parent tabloya
+    var productFeature = _context.ProductFeatures.Include(x=>x.Product).ThenInclude(x=>x.Category).First();
+    Console.WriteLine("ProductFeature: " + productFeature.Color + " Product: " + productFeature.Product.Name + " Category: " + productFeature.Product.Category.Name);
+
+
+    //İçerisinde iki navigation property si bulunan product için hem parent e hem child entitysine erişme
+    var product = _context.Products.Include(x=>x.ProductFeature).Include(x=>x.Category).First();
+    Console.WriteLine("Product: " + product.Name + " ProductFeature: " + product.ProductFeature.Color + " Category: " + product.Category.Name);
+    Console.ReadKey();
+}
+#elif ExplicitLoading //Sonraan Yüklenme ihtimali olabilecek mavigation propertyler için kullanılır
+using (var _context = new AppDbContext())
+{
+    var category = _context.Categories.First();
+    if (true)
+    {
+        //Kategorileri çektikten sonra belli bir yerde productlara ihtiyaç duymaya başladıysak
+        //Entry methoduna ilgili parent entitiyi veriyoruz
+        //Ardından Collection methodu ile ilgili categorinin productlarını çekip Load methodu ile yüklemesini sağlıyoruz
+        //Collection methodunu category içerisinde birden fazla product olabileceği için kullanıyoruz
+        _context.Entry(category).Collection(x => x.Products).Load();
+        category.Products.ForEach(x =>
+        {
+            Console.WriteLine("ProductName: " + x.Name);
+        });
+    }
+
+    var product = _context.Products.First();
+    if (true)
+    {
+        //Product ve ProductFeature Bire bir ilişki olduğu için Collection methodu yerine Referance methodu kullanılır.
+        _context.Entry(product).Reference(x => x.ProductFeature).Load();
+        Console.WriteLine("Product Feature: "+product.ProductFeature.Color);
+    }
+}
+#elif LazyLoading //ExplicitLoading loading gibi çalışır. Sonradan ihtiyaç duyulabilecek navigation propertyleri yüklemek için kullanılır.
+//Ancak 2 defa db ye sorgu atar. Eksi yön olarak bu açıdan maliyetlidir
+//Bu özellik EFCore da default olarak kapalı gelir, açık hale getirmek öncelikle için Microsoft.EntityFrameworkCore.Proxies kütüphanesi nuggettan kurulmalıdır
+//Ardındann AppDbContext te UseSqlServer methodundan önce modelBuilder.UseLazyLoadingProxies() methodu çaürılmaşıdır
+using (var _context = new AppDbContext())
+{
+    //Bu işlemler program.cs e eklenen Console a yazdırma log komutu ile incelendiğinde category çekerken sorgu attığı,
+    //Product ı çekerken ayrı sorgu yaptığı
+    //Foreach içerisindeki her bir ProductFeature Itemı için bile db yte sorgu attığı görülüyor.
+    //Performans açısından aslında her işlemde db ye sorgu atar ve db yi yorar
+    var category = await _context.Categories.FirstAsync();
+    Console.Write("Category Çekildi");
+
+    var products = category.Products;
+    Console.WriteLine("Categoriinin Productları Çekildi");
+
+    foreach (var item in products)
+    {
+        var productFeatures = item.ProductFeature;
+        Console.WriteLine("ProductFeature Çekildi");
+    }
+    Console.ReadKey();   
+}
+#elif TPH //Table-Per-Hierarchy
+//BaseEntity den miras almış bir entity, ApDbContext e DbSet<BaseEntity> şeklinde yazılmadıysa EfCore un default davranışı olarak davranır ve Baseden gelen
+//propertyler ile her entity için bir tablo oluşturur
+//Ancak DbSet<BaseEntity> şeklinde belirtildiyse bu sefer BaseEntityden miras almış bütün entityleri tek bir db de birleştirir
+using (var _context = new AppDbContext())
+{
+    await _context.Managers.AddAsync(new Manager()
+    {
+        Grade = 1,
+        Age = 20,
+        FirstName = "Alper",
+        LastName = "Yazır"
+    });
+    await _context.Employees.AddAsync(new Employee()
+    {
+        FirstName = "Employee",
+        LastName = "Employee",
+        Age = 20,
+        Salary = 20,
+    });
+
+    await _context.BasePeople.AddAsync(new Manager()
+    {
+        Age = 20,
+        FirstName = "manager1",
+        LastName = "manager1",
+        Grade = 1
+    });
+    await _context.BasePeople.AddAsync(new Employee()
+    {
+        Age = 20,
+        FirstName = "manager1",
+        LastName = "manager1",
+        Salary = 20
+    });
+    _context.SaveChanges();
+    Console.WriteLine("Manager And Employteee Addeed");
+
+    
+    var person = _context.BasePeople.ToList();
+    person.ForEach(x =>
+    {
+        switch (x)
+        {
+            case Manager m:
+                Console.WriteLine("Manager: "+ m.Grade);
+                break;
+            case Employee e:
+                Console.WriteLine("Employee: " + e.Salary);
+                break;
+            default:
+                break;
+        }
+    });
+
+
+}
+#elif TPT //Table-Per-Type
+//BaseEntity den gelen propertyleri başka tabloda, ilgili entityden gelen propertyleride başka tabloda oluşturur
+using (var _context = new AppDbContext())
+{
+    //await _context.Managers.AddAsync(new Manager()
+    //{
+    //    Grade = 2,
+    //    Age = 20,
+    //    FirstName = "Manager3",
+    //    LastName = "Manager3"
+    //});
+    //await _context.Employees.AddAsync(new Employee()
+    //{
+    //    FirstName = "Employee3",
+    //    LastName = "Employee3",
+    //    Age = 20,
+    //    Salary = 20,
+    //});
+    //_context.SaveChanges();
+    var employee = await _context.Employees.ToListAsync();
+    var manager = await _context.Managers.ToListAsync();
+    var basePerson = await _context.BasePeople.ToListAsync();
+    basePerson.ForEach(x =>
+    {
+        switch (x)
+        {
+            case Manager m:
+                Console.WriteLine($"Manager: "+ m.Grade);
+                break;
+            case Employee e:
+                Console.WriteLine($"Employee: " + e.Salary);
+                break;
+            default:
+                break;
+        }
+    });
+
 }
 #endif
 

@@ -18,7 +18,9 @@ namespace EFCore.CodeFirst.Entities
         public string Color { get; set; }
 
         //Product Parent property
-        public Product Product { get; set; }
+        //LazyLoading için virtual eklenmelidir
+        //public virtual Product Product { get; set; }
+        public virtual Product Product { get; set; }
 
     }
 }

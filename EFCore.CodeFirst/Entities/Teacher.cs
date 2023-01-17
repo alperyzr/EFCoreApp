@@ -12,6 +12,8 @@ namespace EFCore.CodeFirst.Entities
     
         public string Name { get; set; }
 
+        //LazyLoading yapılacağı zaman virtual kullanılmalıdır
+        //public virtual List<Student> Students { get; set; }
         public List<Student> Students { get; set; }
 
         public Teacher()
