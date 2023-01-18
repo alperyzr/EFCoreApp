@@ -16,6 +16,8 @@ namespace EFCore.CodeFirst.Entities
         //public virtual List<Student> Students { get; set; }
         public List<Student> Students { get; set; }
 
+        public string Phone { get; set; }
+
         public Teacher()
         {
             Students = new List<Student>();

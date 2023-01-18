@@ -4,6 +4,7 @@ using EFCore.CodeFirst.DataAccessLayer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace EFCore.CodeFirst.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20230118131518_IncludeColumnWithProduct")]
+    partial class IncludeColumnWithProduct
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -66,9 +69,6 @@ namespace EFCore.CodeFirst.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("Barcode")
-                        .HasColumnType("int");
-
                     b.Property<int?>("CategoryId")
                         .IsRequired()
                         .HasColumnType("int");
@@ -79,10 +79,6 @@ namespace EFCore.CodeFirst.Migrations
                     b.Property<DateTime?>("CreatedDate")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime2");
-
-                    b.Property<decimal>("DiscountPrice")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
 
                     b.Property<bool?>("IsActive")
                         .HasColumnType("bit");
@@ -131,10 +127,7 @@ namespace EFCore.CodeFirst.Migrations
 
                     SqlServerIndexBuilderExtensions.IncludeProperties(b.HasIndex("Name", "Price"), new[] { "Stock", "Url" });
 
-                    b.ToTable("Products", t =>
-                        {
-                            t.HasCheckConstraint("PriceDiscountCheck", "[Price]>[DiscountPrice]");
-                        });
+                    b.ToTable("Products");
                 });
 
             modelBuilder.Entity("EFCore.CodeFirst.Entities.ProductFeature", b =>
@@ -267,10 +260,6 @@ namespace EFCore.CodeFirst.Migrations
                         .HasColumnType("bit");
 
                     b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Phone")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 

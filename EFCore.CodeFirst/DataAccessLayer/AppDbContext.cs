@@ -21,6 +21,7 @@ namespace EFCore.CodeFirst.DataAccessLayer
         public DbSet<Manager> Managers { get; set; }
         public DbSet<Employee> Employees { get; set; }
         public DbSet<_BasePerson> BasePeople { get; set; }
+        public DbSet<ProductFull> ProductFulls { get; set; }
 
 
         //Db yolunu appsettingsten okuyabilmek için;
@@ -83,7 +84,32 @@ namespace EFCore.CodeFirst.DataAccessLayer
             modelBuilder.Entity<Manager>().ToTable("Managers");
             modelBuilder.Entity<_BasePerson>().ToTable("BasePeople");
 
+            //[Keyless] validationun FluentAPI tarafındaki yazımı
+            modelBuilder.Entity<ProductFull>().HasNoKey();
 
+            //[NotMapped] attribute ünün FluentAPI tarafında kullanımı Barcode propertysinin db de oluşmamasını sağlar
+            modelBuilder.Entity<Product>().Ignore(x => x.Test);
+
+            //[Unicode(false)] attributeünün FluentApıu tarafındaki karşığı, ASCII karakterleri için kullanılır. Türkçe karakter kabul etmez
+            //Tip olarak artık varchar sayılır ve 2 Byte verine 1 bytelık yer kaplar           
+            modelBuilder.Entity<Product>().Property(x=>x.Name).IsUnicode(false);
+
+            //[Column(TypeName="varchar(200)")] attribüteünün FluenTAPI tarafında kullanımı
+            modelBuilder.Entity<Product>().Property(x => x.Url).HasColumnType("varchar(200)");
+
+            //Product classı üzerinde yer alan [Index(nameof(Name))] attribüte ünün FluentAPI tarafındaki karşılığıdır.
+            //Product tablosundaki Name alanına göre indexleme yaparak Sql tarafında daha hızlı sorgular ve sonuçlar almamızı sağlar
+            //IncluedeProperties methodu ise bu index tablosuna sorgu atarken price, stock, ve url propertylerininde hızlı bir şekilde gelmesini istiyorsam 
+            //Bu şekilde ekliyoruz ve IndeTablosunda Where(x=>x.Name =="Alper").Select(x=>new{x.Price,x.Stock}) dersem hızlı bir şekilde bu kolonları alırım
+            modelBuilder.Entity<Product>().HasIndex(x => x.Name).IncludeProperties(x => new { x.Price, x.Stock, x.Url});
+            modelBuilder.Entity<Product>().HasIndex(x => x.Price).IncludeProperties(x => new {x.Name,x.Stock,x.Url});
+
+            //ComposedIndex (tek Where şartında birden fazla property kullandığımız zamanda hızlı sonuç gelmesini istiyorsak) FluentAPI tarafındaki şekli
+            modelBuilder.Entity<Product>().HasIndex(x => new{ x.Name , x.Price }).IncludeProperties(x => new {x.Stock,x.Url});
+
+            //HasCheckConstraint methodu sayesinde bir kural belirtiriz. Bu kurala ilk olarak isim veririz, ardından ilgili kuralı veririz
+            //Bu kuralda Her zaman fiyatın indirimli fiyattan büyük olması gerektiğini belirttik
+            modelBuilder.Entity<Product>().HasCheckConstraint("PriceDiscountCheck" , "[Price]>[DiscountPrice]");
             base.OnModelCreating(modelBuilder);
         }
     }

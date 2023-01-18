@@ -1,10 +1,11 @@
 ﻿
 //#define ile bir değişken tanımlamamıza ve aşağıdaki if komutları ile hangi using in çalışması gerektiğinin kontrolü yapılr
-#define TPT
+#define LINQ
 
 using EFCore.CodeFirst.DataAccessLayer;
 using EFCore.CodeFirst.Entities;
 using Microsoft.EntityFrameworkCore;
+using System.Net.NetworkInformation;
 
 //DbContext in appsettingsten okunması için classın Build methodu çağrılır.
 DbContextInitializer.Build();
@@ -417,21 +418,21 @@ using (var _context = new AppDbContext())
 //BaseEntity den gelen propertyleri başka tabloda, ilgili entityden gelen propertyleride başka tabloda oluşturur
 using (var _context = new AppDbContext())
 {
-    //await _context.Managers.AddAsync(new Manager()
-    //{
-    //    Grade = 2,
-    //    Age = 20,
-    //    FirstName = "Manager3",
-    //    LastName = "Manager3"
-    //});
-    //await _context.Employees.AddAsync(new Employee()
-    //{
-    //    FirstName = "Employee3",
-    //    LastName = "Employee3",
-    //    Age = 20,
-    //    Salary = 20,
-    //});
-    //_context.SaveChanges();
+    await _context.Managers.AddAsync(new Manager()
+    {
+        Grade = 2,
+        Age = 20,
+        FirstName = "Manager3",
+        LastName = "Manager3"
+    });
+    await _context.Employees.AddAsync(new Employee()
+    {
+        FirstName = "Employee3",
+        LastName = "Employee3",
+        Age = 20,
+        Salary = 20,
+    });
+    _context.SaveChanges();
     var employee = await _context.Employees.ToListAsync();
     var manager = await _context.Managers.ToListAsync();
     var basePerson = await _context.BasePeople.ToListAsync();
@@ -450,6 +451,76 @@ using (var _context = new AppDbContext())
         }
     });
 
+}
+#elif KeylessEntityType //Bir Sql Sorgusu sonucunda dönen ve içerisinde PrimaryKey olmayan tablolar için kullanılır.
+//Onu belirtmek için EfCore otomatik olarak primaryKey olarak algılamasın diye Category_Id ve Product_Id olarak belirttik.
+//CategoryId veya ProductId olarak belirtseydik EfCore otomatik olarak primary key olarak algılardı ve keyless attributüne gerek kalmazdı
+//Keyless entitylerde içerisinde PrimaryKey olmadığı için ekleme-silme-güncelleme işlemleri yapılmaz sadece get işlemleri olur ve okuma işlemi sağlanır
+using (var _context = new AppDbContext())
+{
+    //FromSqlRaw methodu içerisinde direct olarak ham sql cümleciği yazmamıza olanak sağlar
+    var productsFull = _context.ProductFulls.FromSqlRaw(@"select c.Id 'Category_Id', c.Name 'CategoryName', p.Id 'Product_Id', p.Name 'ProductName', p.Price, pf.Id 'ProductFeature_Id', pf.Color from Products p join ProductFeatures pf on p.Id = pf.Id join Categories c on p.CategoryId = c.Id
+        ").ToList();
+
+    productsFull.ForEach(x =>
+    {
+        Console.WriteLine($"CategoryId: {x.Category_Id} CategoryName: {x.CategoryName} ProductId: {x.Product_Id} ProductName: {x.ProductName} Price: {x.Price} Product Color: {x.Color}");
+    });
+}
+#elif Index //EfCore tarafındaki SqlIndex
+using (var _context = new AppDbContext())
+{
+    //Indexli Sorgu Sadece Select kısmında IncludeColumn a eklenen propertyler çekildiğinde
+    //Performans açısından debugsuz ayağa kaldırıldığı zaman iki sorgununda ekrana yazdırma hızının arasındaki farktan indexin farkı bariz şekilde görülüyor
+    var productIndex = _context.Products.Where(x => x.Name.Contains("Kalem 1")).Select(x => new { Name = x.Name, Price = x.Price, Stock = x.Stock, URL = x.Url}).ToList();
+    productIndex.ForEach(x =>
+    {
+        Console.WriteLine($"Name: {x.Name}, Price: {x.Price}, Stock: {x.Stock}, URL: {x.URL}");
+    });
+
+    //Index olmayan Sorgu, IncludeColumn kısmına Barcode alanı eklenmediği için Barcode kolonunu çekmek için tekrar ana tabloya gider ve zaman kaybı olur
+    var productIndex2 = _context.Products.Where(x => x.Name.Contains("Kalem 1")).Select(x => new { Name = x.Name, Price = x.Price, Stock = x.Stock, URL = x.Url, Barcode = x.Barcode }).ToList();
+    productIndex2.ForEach(x =>
+    {
+        Console.WriteLine($"Name: {x.Name}, Price: {x.Price}, Stock: {x.Stock}, URL: {x.URL}, Barcode: {x.Barcode}");
+    });
+
+    //DiscountPrice daima Pricedan küçük olacak diye kural belirttiğimiz için bu kayıdı eklemez ve hata fırlatır
+   var product = _context.Products.Add(new Product()
+    {
+        Name = "Kalem 2",
+        Barcode = 123,
+        Price = 100,
+        CreatedDate = DateTime.Now,
+        DiscountPrice = 101,
+        IsActive = true,
+        IsDeleted = false,
+        Stock = 100,
+        CategoryId = 3,
+        Url = "123"
+    });
+    
+    _context.SaveChanges();
+}
+#elif LINQ
+using (var _context = new AppDbContext())
+{
+    //örneğin böyle local bir method üzerinden telefon formatlayarak karşılaştırma yapmak istediğimizi düşünelim.
+    //Aşağıdaki örnekteki gibi where koşulu içerisine direkt olarak o methodu yazamayız. Çünkü Sql tarafı o methodu çözümleyemez.
+    //Bizde formatlı şekilde telefon numarası alsı almak istiyorsak ilk önce bütün datayı çekip, ardından where şartı içerisine formatlama methoduna
+    //yönlendirip,  belirttiğimiz formata göre toList diyebiliriz
+    //var teacher = _context.Teachers.Where(x => x.Phone == GetFormatPhone(x.Phone)).ToList();
+    var teacher2 = _context.Teachers.ToList().Select(x => new {Phone = GetFormatPhone(x.Phone) }).ToList();
+    teacher2.ForEach(x =>
+    {
+        Console.WriteLine($"PhoneNumber:{x.Phone}");
+    });
+
+       
+}
+string GetFormatPhone(string phone)
+{
+    return phone.Substring(1, phone.Length - 1);
 }
 #endif
 
