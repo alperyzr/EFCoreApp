@@ -505,9 +505,9 @@ using (var _context = new AppDbContext())
 #elif LINQ
 using (var _context = new AppDbContext())
 {
-    //örneğin böyle local bir method üzerinden telefon formatlayarak karşılaştırma yapmak istediğimizi düşünelim.
+    //örneğin GetFormatPhone local bir method üzerinden telefon formatlayarak karşılaştırma yapmak istediğimizi düşünelim.
     //Aşağıdaki örnekteki gibi where koşulu içerisine direkt olarak o methodu yazamayız. Çünkü Sql tarafı o methodu çözümleyemez.
-    //Bizde formatlı şekilde telefon numarası alsı almak istiyorsak ilk önce bütün datayı çekip, ardından where şartı içerisine formatlama methoduna
+    //Bizde formatlı şekilde telefon numarası almak istiyorsak ilk önce bütün datayı çekip, ardından where şartı içerisine formatlama methoduna
     //yönlendirip,  belirttiğimiz formata göre toList diyebiliriz
     //var teacher = _context.Teachers.Where(x => x.Phone == GetFormatPhone(x.Phone)).ToList();
     var teacher2 = _context.Teachers.ToList().Select(x => new {Phone = GetFormatPhone(x.Phone) }).ToList();
