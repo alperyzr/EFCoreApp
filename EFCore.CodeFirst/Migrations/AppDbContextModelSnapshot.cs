@@ -93,8 +93,7 @@ namespace EFCore.CodeFirst.Migrations
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .IsUnicode(false)
-                        .HasColumnType("char(100)")
+                        .HasColumnType("nchar(100)")
                         .IsFixedLength();
 
                     b.Property<decimal>("Price")
@@ -102,6 +101,10 @@ namespace EFCore.CodeFirst.Migrations
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<int>("Stock")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Test")
+                        .IsUnicode(false)
                         .HasColumnType("int");
 
                     b.Property<int?>("UpdatedBy")

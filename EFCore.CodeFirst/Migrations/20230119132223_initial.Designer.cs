@@ -12,17 +12,18 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace EFCore.CodeFirst.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20230116160205_DAteTimeDataBaseGeneratedOptions")]
-    partial class DAteTimeDataBaseGeneratedOptions
+    [Migration("20230119132223_initial")]
+    partial class initial
     {
+        /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "6.0.9")
+                .HasAnnotation("ProductVersion", "7.0.2")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
-            SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder, 1L, 1);
+            SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
             modelBuilder.Entity("EFCore.CodeFirst.Entities.Category", b =>
                 {
@@ -30,7 +31,7 @@ namespace EFCore.CodeFirst.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<int?>("CreatedBy")
                         .HasColumnType("int");
@@ -66,7 +67,7 @@ namespace EFCore.CodeFirst.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<int>("Barcode")
                         .HasColumnType("int");
@@ -82,6 +83,10 @@ namespace EFCore.CodeFirst.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime2");
 
+                    b.Property<decimal>("DiscountPrice")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<bool?>("IsActive")
                         .HasColumnType("bit");
 
@@ -90,14 +95,17 @@ namespace EFCore.CodeFirst.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nchar(100)")
-                        .IsFixedLength();
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal>("Price")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<int>("Stock")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Test")
+                        .IsUnicode(false)
                         .HasColumnType("int");
 
                     b.Property<int?>("UpdatedBy")
@@ -106,11 +114,19 @@ namespace EFCore.CodeFirst.Migrations
                     b.Property<DateTime?>("UpdatedDate")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(200)");
+
                     b.HasKey("Id");
 
                     b.HasIndex("CategoryId");
 
-                    b.ToTable("Products");
+                    b.ToTable("Products", t =>
+                        {
+                            t.HasCheckConstraint("PriceDiscountCheck", "[Price]>[DiscountPrice]");
+                        });
                 });
 
             modelBuilder.Entity("EFCore.CodeFirst.Entities.ProductFeature", b =>
@@ -152,13 +168,43 @@ namespace EFCore.CodeFirst.Migrations
                     b.ToTable("ProductFeatures");
                 });
 
+            modelBuilder.Entity("EFCore.CodeFirst.Entities.ProductFull", b =>
+                {
+                    b.Property<string>("CategoryName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Category_Id")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Color")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("Price")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("ProductFeature_Id")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ProductName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Product_Id")
+                        .HasColumnType("int");
+
+                    b.ToTable("ProductFulls");
+                });
+
             modelBuilder.Entity("EFCore.CodeFirst.Entities.Student", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<int>("Age")
                         .HasColumnType("int");
@@ -197,7 +243,7 @@ namespace EFCore.CodeFirst.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<int?>("CreatedBy")
                         .HasColumnType("int");
@@ -216,6 +262,10 @@ namespace EFCore.CodeFirst.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("Phone")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<int?>("UpdatedBy")
                         .HasColumnType("int");
 
@@ -225,6 +275,32 @@ namespace EFCore.CodeFirst.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Teachers");
+                });
+
+            modelBuilder.Entity("EFCore.CodeFirst.Entities._BasePerson", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("Age")
+                        .HasColumnType("int");
+
+                    b.Property<string>("FirstName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("LastName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("BasePeople", (string)null);
+
+                    b.UseTptMappingStrategy();
                 });
 
             modelBuilder.Entity("StudentTeacher", b =>
@@ -240,6 +316,26 @@ namespace EFCore.CodeFirst.Migrations
                     b.HasIndex("TeacherId");
 
                     b.ToTable("StudentTeacher");
+                });
+
+            modelBuilder.Entity("EFCore.CodeFirst.Entities.Employee", b =>
+                {
+                    b.HasBaseType("EFCore.CodeFirst.Entities._BasePerson");
+
+                    b.Property<int>("Salary")
+                        .HasColumnType("int");
+
+                    b.ToTable("Employees", (string)null);
+                });
+
+            modelBuilder.Entity("EFCore.CodeFirst.Entities.Manager", b =>
+                {
+                    b.HasBaseType("EFCore.CodeFirst.Entities._BasePerson");
+
+                    b.Property<int>("Grade")
+                        .HasColumnType("int");
+
+                    b.ToTable("Managers", (string)null);
                 });
 
             modelBuilder.Entity("EFCore.CodeFirst.Entities.Product", b =>
@@ -279,6 +375,24 @@ namespace EFCore.CodeFirst.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("FK_TeacherId");
+                });
+
+            modelBuilder.Entity("EFCore.CodeFirst.Entities.Employee", b =>
+                {
+                    b.HasOne("EFCore.CodeFirst.Entities._BasePerson", null)
+                        .WithOne()
+                        .HasForeignKey("EFCore.CodeFirst.Entities.Employee", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("EFCore.CodeFirst.Entities.Manager", b =>
+                {
+                    b.HasOne("EFCore.CodeFirst.Entities._BasePerson", null)
+                        .WithOne()
+                        .HasForeignKey("EFCore.CodeFirst.Entities.Manager", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("EFCore.CodeFirst.Entities.Category", b =>

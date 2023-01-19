@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace EFCore.CodeFirst.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20230118124742_SetProductPropertyIndex")]
-    partial class SetProductPropertyIndex
+    [Migration("20230119132457_ProductName")]
+    partial class ProductName
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -69,6 +69,9 @@ namespace EFCore.CodeFirst.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<int>("Barcode")
+                        .HasColumnType("int");
+
                     b.Property<int?>("CategoryId")
                         .IsRequired()
                         .HasColumnType("int");
@@ -80,6 +83,10 @@ namespace EFCore.CodeFirst.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime2");
 
+                    b.Property<decimal>("DiscountPrice")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<bool?>("IsActive")
                         .HasColumnType("bit");
 
@@ -89,8 +96,7 @@ namespace EFCore.CodeFirst.Migrations
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .IsUnicode(false)
-                        .HasColumnType("char(100)")
+                        .HasColumnType("nchar(100)")
                         .IsFixedLength();
 
                     b.Property<decimal>("Price")
@@ -98,6 +104,10 @@ namespace EFCore.CodeFirst.Migrations
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<int>("Stock")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Test")
+                        .IsUnicode(false)
                         .HasColumnType("int");
 
                     b.Property<int?>("UpdatedBy")
@@ -117,11 +127,20 @@ namespace EFCore.CodeFirst.Migrations
 
                     b.HasIndex("Name");
 
+                    SqlServerIndexBuilderExtensions.IncludeProperties(b.HasIndex("Name"), new[] { "Price", "Stock", "Url" });
+
                     b.HasIndex("Price");
+
+                    SqlServerIndexBuilderExtensions.IncludeProperties(b.HasIndex("Price"), new[] { "Name", "Stock", "Url" });
 
                     b.HasIndex("Name", "Price");
 
-                    b.ToTable("Products");
+                    SqlServerIndexBuilderExtensions.IncludeProperties(b.HasIndex("Name", "Price"), new[] { "Stock", "Url" });
+
+                    b.ToTable("Products", t =>
+                        {
+                            t.HasCheckConstraint("PriceDiscountCheck", "[Price]>[DiscountPrice]");
+                        });
                 });
 
             modelBuilder.Entity("EFCore.CodeFirst.Entities.ProductFeature", b =>
@@ -254,6 +273,10 @@ namespace EFCore.CodeFirst.Migrations
                         .HasColumnType("bit");
 
                     b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Phone")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 

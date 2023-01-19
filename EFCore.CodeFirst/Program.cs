@@ -1,11 +1,13 @@
 ﻿
 //#define ile bir değişken tanımlamamıza ve aşağıdaki if komutları ile hangi using in çalışması gerektiğinin kontrolü yapılr
-#define LINQ
+#define RawSQLQuery
 
 using EFCore.CodeFirst.DataAccessLayer;
 using EFCore.CodeFirst.Entities;
 using Microsoft.EntityFrameworkCore;
+using System.Drawing;
 using System.Net.NetworkInformation;
+using System.Security.Cryptography;
 
 //DbContext in appsettingsten okunması için classın Build methodu çağrılır.
 DbContextInitializer.Build();
@@ -521,6 +523,192 @@ using (var _context = new AppDbContext())
 string GetFormatPhone(string phone)
 {
     return phone.Substring(1, phone.Length - 1);
+}
+#elif Joins //NavigationProperty olmadığı senaryolarda join kullanılır.
+//NavigationProperty varsa EagerLoadding, ExplicientLoading veya LazzyLoading kullanırız ve joine gerek kalmaz
+using (var _context = new AppDbContext())
+{
+    //Method Syntax olarak Adnalndırılır
+    //EFCore Tarafına join işlemi için Join methodundan sonra _context üzerindeki joinlecenek tablo verilir.
+    //Ardından İlk tablomuzun Id si, joinlenecek tablodaki karşılık gelecek Id ye eşitlenir.
+    //Burada x Category tablosunu, y ise Product tablosuna karşılık gelir ve categorynin Id si ile Productın CategoryId si birbirine eşitlenir.
+    //Aerdından (c,p) dediğimiz yerde isim vermiş oluruz ve new anahtar sözcüğü ile artık c ve p de ki propertylere ulaşabiliriz.
+    //CategoryName, ProductName ve ProductPrice alanları aslınada entityde yok. Bir nevi sql tarafın c.CategoryName as CategoryName
+    //diyerek isimlendirme gibi kullanılıyor
+    //2 li Join
+    var result = _context.Categories
+        .Join(_context.Products, x => x.Id, y => y.CategoryId, (c, p) => new
+        {
+            CategoryName = c.Name,
+            ProductName = p.Name,
+            ProductPrice = p.Price,
+        }).ToList();
+
+    result.ForEach(x =>
+    {
+        Console.WriteLine($"CategoryName: {x.CategoryName}, ProductName: {x.ProductName}, ProductPrice: {x.ProductPrice}");
+    });
+
+    //Method Syntax olarak Adnalndırılır
+    //3lü Join
+    var result2 = _context.Categories
+        .Join(_context.Products, x => x.Id, y => y.CategoryId, (c, p) => new { c, p })
+        .Join(_context.ProductFeatures, x => x.p.Id, y => y.Id, (c, pf) => new
+        {
+            CategoryName = c.c.Name,
+            ProductName = c.p.Name,
+            ProductPrice = c.p.Price,
+            Color = pf.Color,
+        }).ToList();
+    
+    result2.ForEach(x =>
+    {
+        Console.WriteLine($"CategoryName: {x.CategoryName}, ProductName: {x.ProductName}, ProductPrice: {x.ProductPrice}, Color: {x.Color}");
+    });
+
+
+    //QuerySyntax olarak adlanrırılır
+    //LINQ kullanmak yerine direkt sql cümleciği gibi de kullanılabilir aynı işlemi yapar
+    //2 li Join
+    var result3 = (from category in _context.Categories
+                   join product in _context.Products on category.Id equals product.CategoryId
+                   select new
+                   {
+                       CategoryName = category.Name,
+                       ProductName = product.Name,
+                       ProductPrice = product.Price,
+                   }).ToList();
+
+
+    result3.ForEach(x =>
+    {
+        Console.WriteLine($"CategoryName: {x.CategoryName}, ProductName: {x.ProductName}, ProductPrice: {x.ProductPrice}");
+    });
+
+    //QuerySyntax olarak adlanrırılır
+    //3lü Join
+    var result4 = (from category in _context.Categories 
+                   join product in _context.Products on category.Id equals product.CategoryId
+                   join productFeature in _context.ProductFeatures on product.Id equals productFeature.Id select new
+                   {
+                       CategoryName = category.Name,
+                       ProductName =  product.Name,
+                       ProductPrice = product.Price,
+                       Color = productFeature.Color
+                   }).ToList();
+
+    result4.ForEach(x =>
+    {
+        Console.WriteLine($"CategoryName: {x.CategoryName}, ProductName: {x.ProductName}, ProductPrice: {x.ProductPrice}, Color: {x.Color}");
+    });
+}
+#elif Left_RightJoins 
+//Lef Join hem keşisen tablolarladaki dataları, hemde kesişmese de sol tarafta belirtilen tablonun tamamını almak için kullanılır.
+//Right join ise yine tam tersi hem ortada kesişen, hemde hiç kesişmeyebn sağdaki tablonun datalarını alır
+using (var _context = new AppDbContext())
+{
+
+    //Method Syntax olarak Adnalndırılır
+    //Left Join
+    //pfList.DefaultEmpty methodu ile Productta olup, ProductFeature da olmayan kayıtlar null olarak gelecek
+    //Böylece LeftJoin yapılmış olacak
+    var result = (from p in _context.Products
+                  join pf in _context.ProductFeatures on p.Id equals pf.Id into pfList
+                  from pf in pfList.DefaultIfEmpty()
+                  select new 
+                  {
+                      ProductName = p.Name,
+                      ProductColor = pf.Color,
+                      //Her product a ait her zaman bir productFeature nesnesi olmayabilir. Bu durumda sayısal değerleri nullable türde cast etmek gerekir
+                      ProductWidth = (int?)pf.Width,
+                  }).ToList();
+
+    result.ForEach(x =>
+    {
+        Console.WriteLine($"ProductName: {x.ProductName}, ProductColor: {x.ProductColor}, ProductWidth: {x.ProductWidth}");
+    });
+
+    //RightJoin
+    var result2 = (from pf in _context.ProductFeatures
+                  join p in _context.Products on pf.Id equals p.Id into pList
+                  from p in pList.DefaultIfEmpty()
+                  select new
+                  {
+                      ProductName = p.Name,
+                      ProductColor = pf.Color,
+                      //Burada da ProductFeature da olan kayıtlar Productta olmayabilir. Bu yüzden ProductPrice alanını cast etmem gerekir.
+                      ProductPrice =  (decimal?)p.Price,
+                      ProductWidth = pf.Width,
+                  }).ToList();
+
+    result2.ForEach(x =>
+    {
+        Console.WriteLine($"ProductName: {x.ProductName}, ProductColor: {x.ProductColor}, ProductWidth: {x.ProductWidth}");
+    });
+}
+
+#elif FullOutherjoin 
+using (var _context = new AppDbContext())
+{
+    //QuerySyntax olarak adlanrırılır
+    var left = await (from p in _context.Products
+                      join pf in _context.ProductFeatures on p.Id equals pf.Id into pfList
+                      from pf in pfList.DefaultIfEmpty()
+                      select new
+                      {
+                          ProductId = p.Id,
+                          ProductName = p.Name,
+                          Color = pf.Color, 
+                          
+                      }).ToListAsync();
+
+    //QuerySyntax olarak adlanrırılır
+    var right = await (from pf in _context.ProductFeatures
+                      join p in _context.Products on pf.Id equals p.Id into pList
+                      from p in pList.DefaultIfEmpty()
+                      select new
+                      {
+                          ProductId = p.Id,
+                          ProductName = p.Name,
+                          Color = pf.Color,                        
+                      }).ToListAsync();
+
+    //Union methodu iki listeyi birleştirmek için kullanılır.
+    //Öncelikle left join yazıyoruz. Ardından tam tersi olan rightJoini yuazdıktan sonra union ile iki listeyi birleştiriyoruz
+    //Böylece FullOutherJoin olmuş oluyor
+    var outherjoin = left.Union(right).ToList();
+    outherjoin.ForEach(x =>
+    {
+        Console.WriteLine($"ProductId: {x.ProductId}, ProductName:  {x.ProductName}, Color: {x.Color}");
+    });
+}
+#elif RawSQLQuery 
+using (var _context = new AppDbContext())
+{
+    var Id = 1;
+    var Price = 70;
+    //Where şartı string format gibi kullanılır. Süslü parantez içerisindeki sıfır, virgülden sonra gelecek ilk paramatreye karşılık gelir. 
+    //{1} yazarsak virgülden sonra iki parametre göndermemiz gerekir
+    var products = await _context.Products.FromSqlRaw("select * from Products where Id={0}",Id).ToListAsync();
+    products.ForEach(x =>
+    {
+        Console.WriteLine($"Name: {x.Name}, Price: {x.Price}");
+    });
+
+    //İkinci kullanımı
+    var product2 = await _context.Products.FromSqlInterpolated($"select * from Products where Price >= {Price}").ToListAsync();
+    product2.ForEach(x =>
+    {
+        Console.WriteLine($"Name: {x.Name}, Price: {x.Price}");
+    });
+
+    //Sadece name ve Price gibi custom dönecek sorgular için Models klasörü altında yeni bir ProductsEsentials nesnesi oluşturup DbSet e ekledik.
+    var productsEsentials = await _context.ProdutsEssentials.FromSqlRaw("Select p.Id, p.Name, p.Price, pf.Color, pf.Width from Products p join ProductFeatures pf on p.Id = pf.Id").ToListAsync();
+    productsEsentials.ForEach(x =>
+    {
+        Console.WriteLine($"Id:{x.Id}, Name: {x.Name}, Price: {x.Price}, Color: {x.Color}, Width: {x.Width}");
+    });
+
 }
 #endif
 

@@ -1,4 +1,5 @@
 ﻿using EFCore.CodeFirst.Entities;
+using EFCore.CodeFirst.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -22,6 +23,7 @@ namespace EFCore.CodeFirst.DataAccessLayer
         public DbSet<Employee> Employees { get; set; }
         public DbSet<_BasePerson> BasePeople { get; set; }
         public DbSet<ProductFull> ProductFulls { get; set; }
+        public DbSet<ProdutsEssential> ProdutsEssentials { get; set; }
 
 
         //Db yolunu appsettingsten okuyabilmek için;
@@ -51,6 +53,7 @@ namespace EFCore.CodeFirst.DataAccessLayer
             //Name alanının required olduğu belirtilitr
             //100 karakter sabit bir değer alması için İsFİxed Methodu kullanılır
             modelBuilder.Entity<Product>().Property(x => x.Name).IsRequired().HasMaxLength(100).IsFixedLength();
+            
 
             //decimal değerin toplam kaç karakter olup, virgülden sonra kaç karakter alacağını belirten fluentAPI tarafındaki gösterimi
             modelBuilder.Entity<Product>().Property(x => x.Price).HasPrecision(18, 2);
@@ -92,7 +95,7 @@ namespace EFCore.CodeFirst.DataAccessLayer
 
             //[Unicode(false)] attributeünün FluentApıu tarafındaki karşığı, ASCII karakterleri için kullanılır. Türkçe karakter kabul etmez
             //Tip olarak artık varchar sayılır ve 2 Byte verine 1 bytelık yer kaplar           
-            modelBuilder.Entity<Product>().Property(x=>x.Name).IsUnicode(false);
+            modelBuilder.Entity<Product>().Property(x=>x.Test).IsUnicode(false);
 
             //[Column(TypeName="varchar(200)")] attribüteünün FluenTAPI tarafında kullanımı
             modelBuilder.Entity<Product>().Property(x => x.Url).HasColumnType("varchar(200)");
@@ -110,6 +113,8 @@ namespace EFCore.CodeFirst.DataAccessLayer
             //HasCheckConstraint methodu sayesinde bir kural belirtiriz. Bu kurala ilk olarak isim veririz, ardından ilgili kuralı veririz
             //Bu kuralda Her zaman fiyatın indirimli fiyattan büyük olması gerektiğini belirttik
             modelBuilder.Entity<Product>().HasCheckConstraint("PriceDiscountCheck" , "[Price]>[DiscountPrice]");
+
+            modelBuilder.Entity<ProdutsEssential>().HasNoKey();
             base.OnModelCreating(modelBuilder);
         }
     }
