@@ -1,6 +1,6 @@
 ﻿
 //#define ile bir değişken tanımlamamıza ve aşağıdaki if komutları ile hangi using in çalışması gerektiğinin kontrolü yapılr
-#define RawSQLQuery
+#define ToSQLQuery
 
 using EFCore.CodeFirst.DataAccessLayer;
 using EFCore.CodeFirst.Entities;
@@ -703,12 +703,20 @@ using (var _context = new AppDbContext())
     });
 
     //Sadece name ve Price gibi custom dönecek sorgular için Models klasörü altında yeni bir ProductsEsentials nesnesi oluşturup DbSet e ekledik.
-    var productsEsentials = await _context.ProdutsEssentials.FromSqlRaw("Select p.Id, p.Name, p.Price, pf.Color, pf.Width from Products p join ProductFeatures pf on p.Id = pf.Id").ToListAsync();
+    var productsEsentials = await _context.ProdutsEssentials.FromSqlRaw("Select p.Id, p.Name, p.Price, pf.Color, pf.Width from Products p inner join ProductFeatures pf on p.Id = pf.Id").ToListAsync();
     productsEsentials.ForEach(x =>
     {
         Console.WriteLine($"Id:{x.Id}, Name: {x.Name}, Price: {x.Price}, Color: {x.Color}, Width: {x.Width}");
     });
 
+    var productWidthFeature = await _context.ProductWithFeatures.FromSqlRaw(@"Select p.Id, p.Name, p.Price, pf.Color, pf.Width from Products p inner join ProductFeatures pf on p.Id = pf.Id").ToListAsync();
+
+}
+#elif ToSQLQuery 
+using (var _context = new AppDbContext())
+{
+    var product = await _context.ProdutsEssentials.ToListAsync();
+    Console.WriteLine(product);
 }
 #endif
 

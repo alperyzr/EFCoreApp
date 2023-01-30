@@ -24,6 +24,7 @@ namespace EFCore.CodeFirst.DataAccessLayer
         public DbSet<_BasePerson> BasePeople { get; set; }
         public DbSet<ProductFull> ProductFulls { get; set; }
         public DbSet<ProdutsEssential> ProdutsEssentials { get; set; }
+        public DbSet<ProductWithFeature> ProductWithFeatures { get; set; }
 
 
         //Db yolunu appsettingsten okuyabilmek için;
@@ -114,7 +115,12 @@ namespace EFCore.CodeFirst.DataAccessLayer
             //Bu kuralda Her zaman fiyatın indirimli fiyattan büyük olması gerektiğini belirttik
             modelBuilder.Entity<Product>().HasCheckConstraint("PriceDiscountCheck" , "[Price]>[DiscountPrice]");
 
-            modelBuilder.Entity<ProdutsEssential>().HasNoKey();
+
+            //ToSqlQeury custom sorgular için kullanılır. _context.ToList eddiğimiz gibi bu sorgu arkada çalışır ve tek bir yerden kontrol etmiş oluruz
+            modelBuilder.Entity<ProdutsEssential>().HasNoKey().ToSqlQuery(@"
+                                select p.Id, p.Name, p.Price, pf.Color, pf.Width from Products p inner join
+                                ProductFeatures pf on p.Id = pf.Id");
+            modelBuilder.Entity<ProductWithFeature>().HasNoKey();
             base.OnModelCreating(modelBuilder);
         }
     }
