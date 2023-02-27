@@ -53,7 +53,7 @@ namespace EFCore.CodeFirst.DataAccessLayer
 
             //Name alanının required olduğu belirtilitr
             //100 karakter sabit bir değer alması için İsFİxed Methodu kullanılır
-            modelBuilder.Entity<Product>().Property(x => x.Name).IsRequired().HasMaxLength(100).IsFixedLength();
+            modelBuilder.Entity<Product>().Property(x => x.Name).IsRequired()/*.HasMaxLength(100).IsFixedLength()*/;
             
 
             //decimal değerin toplam kaç karakter olup, virgülden sonra kaç karakter alacağını belirten fluentAPI tarafındaki gösterimi
@@ -99,7 +99,7 @@ namespace EFCore.CodeFirst.DataAccessLayer
             modelBuilder.Entity<Product>().Property(x=>x.Test).IsUnicode(false);
 
             //[Column(TypeName="varchar(200)")] attribüteünün FluenTAPI tarafında kullanımı
-            modelBuilder.Entity<Product>().Property(x => x.Url).HasColumnType("varchar(200)");
+            modelBuilder.Entity<Product>().Property(x => x.Url).HasColumnType("nvarchar(MAX)");
 
             //Product classı üzerinde yer alan [Index(nameof(Name))] attribüte ünün FluentAPI tarafındaki karşılığıdır.
             //Product tablosundaki Name alanına göre indexleme yaparak Sql tarafında daha hızlı sorgular ve sonuçlar almamızı sağlar
@@ -117,9 +117,7 @@ namespace EFCore.CodeFirst.DataAccessLayer
 
 
             //ToSqlQeury custom sorgular için kullanılır. _context.ToList eddiğimiz gibi bu sorgu arkada çalışır ve tek bir yerden kontrol etmiş oluruz
-            modelBuilder.Entity<ProdutsEssential>().HasNoKey().ToSqlQuery(@"
-                                select p.Id, p.Name, p.Price, pf.Color, pf.Width from Products p inner join
-                                ProductFeatures pf on p.Id = pf.Id");
+            modelBuilder.Entity<ProdutsEssential>().HasNoKey().ToSqlQuery("select p.Id, p.Name, p.Price, pf.Color, pf.Width from Products p inner join ProductFeatures pf on p.Id = pf.Id");
             modelBuilder.Entity<ProductWithFeature>().HasNoKey();
             base.OnModelCreating(modelBuilder);
         }

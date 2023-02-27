@@ -715,8 +715,13 @@ using (var _context = new AppDbContext())
 #elif ToSQLQuery 
 using (var _context = new AppDbContext())
 {
+    //AppDbContext içerisinde ki modelBuilder içerisinde yazılan sorguya göre getirir
+    //Aynı zamanda sonradan where gibi koşul eklemke istersekte EF otomatik olarak ModelBuilder içerisindeki sorguya where koşulunu ekler
     var product = await _context.ProdutsEssentials.ToListAsync();
-    Console.WriteLine(product);
+    product.ForEach(x =>
+    {
+        Console.WriteLine($"Id: {x.Id} Name: {x.Name}, Price: {x.Price}, Color: {x.Color}, Width: {x.Width}");
+    });
 }
 #endif
 

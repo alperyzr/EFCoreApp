@@ -4,6 +4,7 @@ using EFCore.CodeFirst.DataAccessLayer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace EFCore.CodeFirst.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20230227105552_ProductSetNameType")]
+    partial class ProductSetNameType
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -92,7 +95,9 @@ namespace EFCore.CodeFirst.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)");
+                        .HasMaxLength(100)
+                        .HasColumnType("nchar(100)")
+                        .IsFixedLength();
 
                     b.Property<decimal>("Price")
                         .HasPrecision(18, 2)
@@ -114,7 +119,7 @@ namespace EFCore.CodeFirst.Migrations
                     b.Property<string>("Url")
                         .IsRequired()
                         .IsUnicode(false)
-                        .HasColumnType("nvarchar(MAX)");
+                        .HasColumnType("varchar(200)");
 
                     b.HasKey("Id");
 

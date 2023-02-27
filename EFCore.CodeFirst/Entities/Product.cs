@@ -28,7 +28,7 @@ namespace EFCore.CodeFirst.Entities
         //Böylece Sql tarafının daha verimli ve daha az yer maliyetli çalışması sağlanır
         //Aynı zamanda [Column(TypeName="")] ile birlikte tirpini ve max alacağı karakter sayısınıda belirtebilir
         [Unicode(false)]
-        [Column(TypeName = "varchar(200)")]
+        [Column(TypeName = "nvarchar(max)")]
         public string Url { get; set; }
 
         //Decimal değerler için kaç karakter olup, virgülden sonra kaç karakter alacağını belirtmek için kullanılır

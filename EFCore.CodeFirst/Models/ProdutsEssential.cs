@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace EFCore.CodeFirst.Models
 {
-    [Keyless]
+    
     public class ProdutsEssential
     {
         public int Id { get; set; }
