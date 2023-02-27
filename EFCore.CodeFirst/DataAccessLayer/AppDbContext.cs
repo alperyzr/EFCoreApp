@@ -25,6 +25,7 @@ namespace EFCore.CodeFirst.DataAccessLayer
         public DbSet<ProductFull> ProductFulls { get; set; }
         public DbSet<ProdutsEssential> ProdutsEssentials { get; set; }
         public DbSet<ProductWithFeature> ProductWithFeatures { get; set; }
+        public DbSet<ProductWithFeatureView> ProductWithFeatureViews { get; set; }
 
 
         //Db yolunu appsettingsten okuyabilmek için;
@@ -119,6 +120,11 @@ namespace EFCore.CodeFirst.DataAccessLayer
             //ToSqlQeury custom sorgular için kullanılır. _context.ToList eddiğimiz gibi bu sorgu arkada çalışır ve tek bir yerden kontrol etmiş oluruz
             modelBuilder.Entity<ProdutsEssential>().HasNoKey().ToSqlQuery("select p.Id, p.Name, p.Price, pf.Color, pf.Width from Products p inner join ProductFeatures pf on p.Id = pf.Id");
             modelBuilder.Entity<ProductWithFeature>().HasNoKey();
+
+            //Sql Tarafında View dan okuman için ToView methodu kullanılır
+            modelBuilder.Entity<ProductWithFeatureView>().ToView("productWithFeature");
+
+
             base.OnModelCreating(modelBuilder);
         }
     }
