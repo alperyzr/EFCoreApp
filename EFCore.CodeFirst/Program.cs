@@ -1,6 +1,6 @@
 ﻿
 //#define ile bir değişken tanımlamamıza ve aşağıdaki if komutları ile hangi using in çalışması gerektiğinin kontrolü yapılr
-#define HasQueryFilter2
+#define StoredProcedure2
 
 using EFCore.CodeFirst.DataAccessLayer;
 using EFCore.CodeFirst.Entities;
@@ -782,6 +782,36 @@ using (var _context = new AppDbContext(1))
         Console.WriteLine($"CategoryId: {x.CategoryId} ProductId: {x.Id}, ProductName: {x.Name}, Price: {x.Price}, Stock: {x.Stock}, IsActive: {x.IsActive}");
     });
 
+}
+#elif QueryTags // oluşan sorgu üzerinde sql tarafında otomatik açıklama satırı ekler
+using (var _context = new AppDbContext())
+{
+    var productWithFeature = await _context.Products.TagWith("Bu query ürünler ve ürünlere bağlı özellikleri getirir").Include(x => x.ProductFeature).Where(x => x.Price > 100).ToListAsync();
+    productWithFeature.ForEach(x =>
+    {
+        Console.WriteLine($"CategoryId: {x.CategoryId} ProductId: {x.Id}, ProductName: {x.Name}, Price: {x.Price}, Stock: {x.Stock}, IsActive: {x.IsActive}");
+    });
+
+}
+#elif StoredProcedure1
+using (var _context = new AppDbContext())
+{
+    //StoredProcedure ile geriye tablo döndüren procedureler için basit haliyle bu şekilde kullanılabilir
+    var product = await _context.Products.FromSqlRaw("exec sp_getProducts").ToListAsync();
+    product.ForEach(x =>
+    {
+        Console.WriteLine($"CategoryId: {x.CategoryId} ProductId: {x.Id}, ProductName: {x.Name}, Price: {x.Price}, Stock: {x.Stock}, IsActive: {x.IsActive}");
+    });
+}
+#elif StoredProcedure2 // Custom Data Dönen StoredProcedure
+using (var _context = new AppDbContext())
+{
+   
+    var product = await _context.ProductWithFeatureViews.FromSqlRaw("exec sp_productWithFeatureView").ToListAsync();
+    product.ForEach(x =>
+    {
+        Console.WriteLine($"CategoryId: {x.CategoryId}, CategoryName: {x.CategoryName} ProductId: {x.ProductId}, ProductName: {x.ProductName}, Price: {x.Price}, Stock: {x.Stock}, Color: {x.Color}, Width: {x.Width}, Height: {x.Height}");
+    });
 }
 #endif
 

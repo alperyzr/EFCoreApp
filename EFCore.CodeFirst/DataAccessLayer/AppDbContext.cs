@@ -52,8 +52,12 @@ namespace EFCore.CodeFirst.DataAccessLayer
             //appsettings ten okumak için kullanılır
             //LogTo methodu da lazyLoading ile beraber yapılan işlemlerde Console log bilgilerini yazdırmak için kullanılır
             //UseLazyLoadingProxies methodu kurulan nugget paketten sonra appsettingse eklenerek lazyLoading yapmamıza imkan tanır
+           
             //optionsBuilder.LogTo(Console.WriteLine, LogLevel.Information).UseLazyLoadingProxies().UseSqlServer(DbContextInitializer.Configuration.GetConnectionString("SqlCon"));
-            optionsBuilder.UseSqlServer(DbContextInitializer.Configuration.GetConnectionString("SqlCon"));
+            //optionsBuilder.UseSqlServer(DbContextInitializer.Configuration.GetConnectionString("SqlCon"));
+
+            optionsBuilder.LogTo(Console.WriteLine, LogLevel.Information).UseSqlServer(DbContextInitializer.Configuration.GetConnectionString("SqlCon"));
+
         }
 
 
