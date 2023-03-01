@@ -1,6 +1,6 @@
 ﻿
 //#define ile bir değişken tanımlamamıza ve aşağıdaki if komutları ile hangi using in çalışması gerektiğinin kontrolü yapılr
-#define ToSQLQuery
+#define HasQueryFilter2
 
 using EFCore.CodeFirst.DataAccessLayer;
 using EFCore.CodeFirst.Entities;
@@ -602,7 +602,7 @@ using (var _context = new AppDbContext())
         Console.WriteLine($"CategoryName: {x.CategoryName}, ProductName: {x.ProductName}, ProductPrice: {x.ProductPrice}, Color: {x.Color}");
     });
 }
-#elif Left_RightJoins 
+#elif Left_RightJoins
 //Lef Join hem keşisen tablolarladaki dataları, hemde kesişmese de sol tarafta belirtilen tablonun tamamını almak için kullanılır.
 //Right join ise yine tam tersi hem ortada kesişen, hemde hiç kesişmeyebn sağdaki tablonun datalarını alır
 using (var _context = new AppDbContext())
@@ -647,7 +647,7 @@ using (var _context = new AppDbContext())
     });
 }
 
-#elif FullOutherjoin 
+#elif FullOutherjoin
 using (var _context = new AppDbContext())
 {
     //QuerySyntax olarak adlanrırılır
@@ -682,7 +682,7 @@ using (var _context = new AppDbContext())
         Console.WriteLine($"ProductId: {x.ProductId}, ProductName:  {x.ProductName}, Color: {x.Color}");
     });
 }
-#elif RawSQLQuery 
+#elif RawSQLQuery
 using (var _context = new AppDbContext())
 {
     var Id = 1;
@@ -712,7 +712,7 @@ using (var _context = new AppDbContext())
     var productWidthFeature = await _context.ProductWithFeatures.FromSqlRaw(@"Select p.Id, p.Name, p.Price, pf.Color, pf.Width from Products p inner join ProductFeatures pf on p.Id = pf.Id").ToListAsync();
 
 }
-#elif ToSQLQuery 
+#elif ToSQLQuery
 using (var _context = new AppDbContext())
 {
     //AppDbContext içerisinde ki modelBuilder içerisinde yazılan sorguya göre getirir
@@ -722,6 +722,66 @@ using (var _context = new AppDbContext())
     {
         Console.WriteLine($"Id: {x.Id} Name: {x.Name}, Price: {x.Price}, Color: {x.Color}, Width: {x.Width}");
     });
+}
+#elif SQLView
+using (var _context = new AppDbContext())
+{
+   
+    var product = await _context.ProductWithFeatureViews.ToListAsync();
+    product.ForEach(x =>
+    {
+        Console.WriteLine($"CategoryId: {x.CategoryId} CategoryName: {x.CategoryName}, ProductId: {x.ProductId}, ProductName: {x.ProductName}, Color: {x.Color}, Width: {x.Width}, Height: {x.Height}");
+    });
+}
+#elif Pagination //Take, Skip
+
+GetProducts(1, 2).ForEach(x =>
+{
+    Console.WriteLine($"CategoryId: {x.CategoryId} Id: {x.Id}, Name: {x.Name}, Price: {x.Price}");
+});
+
+static List<Product> GetProducts(int page, int pageSize)
+{
+    using (var _context = new AppDbContext())
+    {
+        //Skip kaç tane atlaması gerektiğini belirtir. Burada gelen sayfadan 1 çıkartıp gelen page size ile çarpıyoruz böylece kaçtan başlayıp kaç atlayacağının formülü ortaya çıkmış oluyor
+        //Take ise başladığı yerden kaç tane data alması gerektiğini gösteriyor ve listeliyor
+        var productsWithPage = _context.Products.OrderByDescending(p => p.Id).Skip((page - 1) * pageSize).Take(pageSize).ToList();
+        return productsWithPage;
+    }
+
+}
+
+#elif HasQueryFilter //AppDbContext üzerinden belirtilen koşul
+using (var _context = new AppDbContext())
+{
+   
+    var product = await _context.Products.ToListAsync();
+    product.ForEach(x =>
+    {
+        Console.WriteLine($"CategoryId: {x.CategoryId} ProductId: {x.Id}, ProductName: {x.Name}, Price: {x.Price}, Stock: {x.Stock}, IsActive: {x.IsActive}");
+    });
+
+
+    //AppDbContext üzerinde ki HasQueryFilter koşulunu geçersiz kılar ve standart olarak ToList işlemi yapar
+    var product2 = await _context.Products.IgnoreQueryFilters().ToListAsync();
+    product2.ForEach(y =>
+    {
+        Console.WriteLine($"CategoryId: {y.CategoryId} ProductId: {y.Id}, ProductName: {y.Name}, Price: {y.Price}, Stock: {y.Stock}, IsActive: {y.IsActive}");
+    });
+}
+#elif HasQueryFilter2 //AppDbContext üzerinde sabit değerli veri alınacağı zaman Ör. Barcode
+//AppDbContext consturacture a Barcode u 1 olan parametresini gönderiyoruz
+using (var _context = new AppDbContext(1))
+{
+   
+    // Böylece direkt olarak sadece barcode 1 olanların listesini getirmiş olur
+    var product = await _context.Products.ToListAsync();
+    product.ForEach(x =>
+    {
+        Console.WriteLine($"CategoryId: {x.CategoryId} ProductId: {x.Id}, ProductName: {x.Name}, Price: {x.Price}, Stock: {x.Stock}, IsActive: {x.IsActive}");
+    });
+
 }
 #endif
 

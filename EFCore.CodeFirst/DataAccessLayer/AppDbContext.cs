@@ -14,6 +14,17 @@ namespace EFCore.CodeFirst.DataAccessLayer
 {
     public class AppDbContext : DbContext
     {
+        private readonly int Barcode;
+        public AppDbContext(int barcode)
+        {
+            Barcode= barcode;
+        }
+
+        public AppDbContext()
+        {
+
+        }
+
         public DbSet<Product> Products { get; set; }
         public DbSet<Category> Categories { get; set; }
         public DbSet<ProductFeature> ProductFeatures { get; set; }
@@ -124,6 +135,18 @@ namespace EFCore.CodeFirst.DataAccessLayer
             //Sql Tarafında View dan okuman için ToView methodu kullanılır
             modelBuilder.Entity<ProductWithFeatureView>().ToView("productWithFeature");
 
+            modelBuilder.Entity<Product>().Property(x => x.IsActive).HasDefaultValue(true);
+            modelBuilder.Entity<Product>().Property(x=>x.IsDeleted).HasDefaultValue(false);
+            modelBuilder.Entity<Product>().Property(x => x.CreatedDate).HasDefaultValue(DateTime.Now);
+
+            //Product nesnesi için Daima IsActive true çekmek istersek global olarak bruada böyle tanımlıyoruz ve çağırdığımız yerde ToList dediğimiz zaman otomatik olarak
+            //bu koşula uyanlar gelecektir
+            modelBuilder.Entity<Product>().HasQueryFilter(x => x.IsActive == true);
+
+            if (Barcode != default(int))
+            {
+                modelBuilder.Entity<Product>().HasQueryFilter(x => x.Barcode == Barcode);
+            }
 
             base.OnModelCreating(modelBuilder);
         }

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
@@ -7,6 +8,7 @@ using System.Threading.Tasks;
 
 namespace EFCore.CodeFirst.Models
 {
+    [Keyless]
     public class ProductWithFeatureView
     {
         
@@ -20,8 +22,8 @@ namespace EFCore.CodeFirst.Models
 
         public string Color { get; set; }
 
-        public string Width { get; set; }
+        public int Width { get; set; }
 
-        public string Height { get; set; }
+        public int Height { get; set; }
     }
 }
