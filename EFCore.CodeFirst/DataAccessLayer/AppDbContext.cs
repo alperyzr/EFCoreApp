@@ -39,6 +39,12 @@ namespace EFCore.CodeFirst.DataAccessLayer
         public DbSet<ProductWithFeatureView> ProductWithFeatureViews { get; set; }
 
 
+        public int GetProductCountWithCategoryId(int categoryId)
+        {
+            throw new NotSupportedException("Bu method EFCore Tarafından çalıştırılmaktadır.");
+        }
+
+
         //Db yolunu appsettingsten okuyabilmek için;
         //Microsoft.Extensions.Configurations
         //Microsoft.Extensions.Configurations.FileExtensions
@@ -151,6 +157,12 @@ namespace EFCore.CodeFirst.DataAccessLayer
             {
                 modelBuilder.Entity<Product>().HasQueryFilter(x => x.Barcode == Barcode);
             }
+
+            //Parametre almayan ve geriye table döndüren sql functionları için temel olarak ToFunction() methodu kullanılailir
+            modelBuilder.Entity<ProductWithFeatureView>().ToFunction("fc_getProducts");
+
+            //Geriye tek bir deper dönen (Category Idsine göre ProductCountlar) function tanımlama
+            modelBuilder.HasDbFunction(typeof(AppDbContext).GetMethod(nameof(GetProductCountWithCategoryId), new[] { typeof(int) }) ! ).HasName("fc_getProductCountWithCategoryId");
 
             base.OnModelCreating(modelBuilder);
         }

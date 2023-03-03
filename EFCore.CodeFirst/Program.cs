@@ -1,6 +1,6 @@
 ﻿
 //#define ile bir değişken tanımlamamıza ve aşağıdaki if komutları ile hangi using in çalışması gerektiğinin kontrolü yapılr
-#define StoredProcedure4
+#define Function3
 
 using EFCore.CodeFirst.DataAccessLayer;
 using EFCore.CodeFirst.Entities;
@@ -857,6 +857,57 @@ using (var _context = new AppDbContext())
     var response = _context.Database.ExecuteSqlInterpolated($"exec sp_insertProduct2 {product.Name},{product.Url},{product.Price},{product.DiscountPrice},{product.Stock},{product.Test},{product.Barcode},{product.CategoryId}");
    //response etkilenen satır sayısını döner. 0 dan büyükse eklenmiş anlamına gelir
     Console.WriteLine($"ResponseCode: {response}");
+}
+#elif Function1 // Table-Values Function (Table Dönen Function)
+using (var _context = new AppDbContext())
+{
+    //======= STORE PROCEDURE - FUNCTİON FARKLARI ======
+    /*
+        - StoredProcedure hem in hem out parametresi alabilir, function sadece in parametresi (girdi parametresi alır)
+        - StoredProcedure geriye bir şey dönmek zorunda değil, functionlar zorunlu
+        - StoreProcedure içinde Function kullanılabilir ancak Funtion içinde StoredProcedure kullanılmaz
+        - StoredProcedure içinde try-catch kullanılabilir, functionda kullanılmaz
+        - StoreProcedure oluşturulurken ismine parantez eklenmez, funtionda eklernir()
+        - StoreProcedure içerisinde begin-end komutları yazılabilir, functionda Scaler-Valeud (tek tip dönüldüğü) zaman kullanılır. Table dönersek kullanılmaz
+     */
+
+    var products = await _context.ProductWithFeatureViews.ToListAsync();
+    products.ForEach(x=>{
+        Console.WriteLine($"CategoryId: {x.CategoryId}, CategoryName: {x.CategoryName}, ProductId: {x.ProductId}, ProductName: {x.ProductName}, Price:{x.Price}, Stock: {x.Stock}, Width: {x.Width}, Height: {x.Height}");
+        
+    });
+
+    
+}
+#elif Function2 // Parametre Alan Function
+using (var _context = new AppDbContext())
+{
+    int categoryId = 1;
+    var products = await _context.ProductWithFeatureViews.FromSqlInterpolated($"select * from fc_getProductByParameters({categoryId})").ToListAsync();
+    products.ForEach(x=>{
+        Console.WriteLine($"CategoryId: {x.CategoryId}, CategoryName: {x.CategoryName}, ProductId: {x.ProductId}, ProductName: {x.ProductName}, Price:{x.Price}, Stock: {x.Stock}, Width: {x.Width}, Height: {x.Height}");
+        
+    });
+
+    
+}
+#elif Function3 // Scalar-Valued Function (Tek bir değer dönen functionlar)
+using (var _context = new AppDbContext())
+{
+    //Aşağıdaki gibi direkt olarak çağırırsak method içerisinde belirtmiş olduğumuz hata mesajı gelecektir
+    //var count = _context.GetProductCountWithCategoryId(1);
+
+    //EFCore methodları içerisinde kullanılması gerekmektedir.
+    //Aksi takdirde girilen method ismini EfCore Function ismi olarak algılayamaz
+    var categoryies = await _context.Categories.Select(x => new
+    {
+        CategoryName = x.Name,
+        ProductCount = _context.GetProductCountWithCategoryId(x.Id)
+    }).ToListAsync();
+    categoryies.ForEach(x =>
+    {
+        Console.WriteLine($"CategoryName: {x.CategoryName}, ProductCount: {x.ProductCount}");
+    });
 }
 #endif
 
