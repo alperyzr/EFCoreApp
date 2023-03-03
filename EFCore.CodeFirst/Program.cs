@@ -1,9 +1,10 @@
 ﻿
 //#define ile bir değişken tanımlamamıza ve aşağıdaki if komutları ile hangi using in çalışması gerektiğinin kontrolü yapılr
-#define StoredProcedure2
+#define StoredProcedure4
 
 using EFCore.CodeFirst.DataAccessLayer;
 using EFCore.CodeFirst.Entities;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using System.Drawing;
 using System.Net.NetworkInformation;
@@ -812,6 +813,50 @@ using (var _context = new AppDbContext())
     {
         Console.WriteLine($"CategoryId: {x.CategoryId}, CategoryName: {x.CategoryName} ProductId: {x.ProductId}, ProductName: {x.ProductName}, Price: {x.Price}, Stock: {x.Stock}, Color: {x.Color}, Width: {x.Width}, Height: {x.Height}");
     });
+}
+#elif StoredProcedure3 // Parametre Alan StoredProcedure
+using (var _context = new AppDbContext())
+{
+    int categoryId = 1;
+    int Price = 50;
+
+    //parametre alan procedureler için FromSqlInterpoleted methodu kullanılır
+    //FromSqlRow komutu ile kullanmak için ($"exec sp_productWithFeatureView_Parameters {0},{1}", categoryId, Price) şeklinde de kullanılabilir
+    var product = await _context.ProductWithFeatureViews.FromSqlInterpolated($"exec sp_productWithFeatureView_Parameters {categoryId},{Price}").ToListAsync();
+    product.ForEach(x =>
+    {
+        Console.WriteLine($"CategoryId: {x.CategoryId}, CategoryName: {x.CategoryName} ProductId: {x.ProductId}, ProductName: {x.ProductName}, Price: {x.Price}, Stock: {x.Stock}, Color: {x.Color}, Width: {x.Width}, Height: {x.Height}");
+    });
+}
+#elif StoredProcedure4 // Insert/Update StoredProcedure
+using (var _context = new AppDbContext())
+{
+    var product = new Product()
+    {
+        Name = "SpProductInsert",
+        Price = 5000,
+        Barcode = 123,
+        CategoryId = 2,
+        DiscountPrice = 4999,
+        Stock = 1000,
+        Test = 123,
+        Url = "sp_producturl",
+
+    };
+    //Sql Tarafında dönecek olan insert kaydının Id sini almak için Bu method kullanılır
+    var newProductIdParameter = new SqlParameter("@newId", System.Data.SqlDbType.Int);
+    //bir dönüş değeri olduğu için OutPut olarak belirtiyoruz
+    newProductIdParameter.Direction = System.Data.ParameterDirection.Output;
+
+    _context.Database.ExecuteSqlInterpolated($"exec sp_insertProduct {product.Name},{product.Url},{product.Price},{product.DiscountPrice},{product.Stock},{product.Test},{product.Barcode},{product.CategoryId}, {newProductIdParameter} out");
+
+    var newProductId = newProductIdParameter.Value;
+    Console.WriteLine($"New Product Id: {newProductId}");
+
+    //Geriye bir değer döndürmeyen Create işlemi
+    var response = _context.Database.ExecuteSqlInterpolated($"exec sp_insertProduct2 {product.Name},{product.Url},{product.Price},{product.DiscountPrice},{product.Stock},{product.Test},{product.Barcode},{product.CategoryId}");
+   //response etkilenen satır sayısını döner. 0 dan büyükse eklenmiş anlamına gelir
+    Console.WriteLine($"ResponseCode: {response}");
 }
 #endif
 
