@@ -993,7 +993,7 @@ using (var _context = new AppDbContext())
     var productDto = ObjectMapper.Mapper.Map<List<ProductDtoWithAutoMapper>>(products);
     productDto.ForEach(x =>
     {
-        Console.WriteLine($"categoryId: {x.Category.Id}, CAtegoryName: {x.Category.Name}, ProductId: {x.Id}, ProductName: {x.Name}, Price: {x.Price}");
+        Console.WriteLine($"CategoryId: {x.Category.Id}, CategoryName: {x.Category.Name}, ProductId: {x.Id}, ProductName: {x.Name}, Price: {x.Price}");
     });
 
     Console.WriteLine("\n");
