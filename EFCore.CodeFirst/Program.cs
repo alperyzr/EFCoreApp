@@ -1,9 +1,12 @@
 ﻿
 //#define ile bir değişken tanımlamamıza ve aşağıdaki if komutları ile hangi using in çalışması gerektiğinin kontrolü yapılr
-#define Function3
+#define DtoOrViewModelAutoMapper
 
+using AutoMapper.QueryableExtensions;
 using EFCore.CodeFirst.DataAccessLayer;
 using EFCore.CodeFirst.Entities;
+using EFCore.CodeFirst.Mappers;
+using EFCore.CodeFirst.Models.DTO;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using System.Drawing;
@@ -907,6 +910,100 @@ using (var _context = new AppDbContext())
     categoryies.ForEach(x =>
     {
         Console.WriteLine($"CategoryName: {x.CategoryName}, ProductCount: {x.ProductCount}");
+    });
+}
+#elif Projection //Yansıtma Entity / AnonymousType
+using (var _context = new AppDbContext())
+{
+    //Db den gelen datayı entity ile karşıladığımız yöntem, en basit yansıtma yöntemidir.
+    var products = await _context.Products.Include(x=>x.Category).ToListAsync();
+    products.ForEach(x =>
+    {
+        Console.WriteLine($"CategoryId: {x.Category.Id}, CategoryName: {x.Category.Name}, ProductId: {x.Id}, ProductName: {x.Name}");
+    });
+    Console.WriteLine("\n");
+
+    //AnonymousType (Belirsiz tipli Yansıtma) Select ifadesi ile custom oluşturduğumuz classlara denir
+    //Select methodu kullanıyorsak ve entitylerin içerisinde NavigationPropertyler varsa İnclude ve ya ThenInclude gibi methodları kullanmaya gerek kalmaz.
+    //EfCore bunu kendi içinde otomatik algılar
+    var products2 = await _context.Products.Include(x => x.Category).Select(x=> new
+    {
+        CategoryId = x.Category.Id,
+        CategoryName = x.Category.Name,
+        ProductId = x.Id,
+        ProductName = x.Name,
+
+    }).ToListAsync();
+    products2.ForEach(x =>
+    {
+        Console.WriteLine($"CategoryId: {x.CategoryId}, CategoryName: {x.CategoryName}, ProductId: {x.ProductId}, ProductName: {x.ProductName}");
+    });
+    Console.WriteLine("\n");
+
+    //AnonymousType2 (Belirsiz tipli Yansıtma) 
+    var categories = await _context.Categories.Include(x => x.Products).ThenInclude(x => x.ProductFeature).Select(x => new
+    {
+        CategoryId = x.Id,
+        CategoryName = x.Name,
+        Products = String.Join(",", x.Products.Select(x=>x.Name)),
+        TotalPrice = x.Products.Sum(x=>x.Price)
+        
+    }).Where(x=>x.TotalPrice > 100).OrderBy(x => x.TotalPrice).ToListAsync();
+    categories.ForEach(x =>
+    {
+        Console.WriteLine($"CategoryId: {x.CategoryId}, CategoryName: {x.CategoryName}, ProductName: {x.Products}, TotalPrice: {x.TotalPrice}");
+    });
+}
+#elif Projection2 //Yansıtma DTO / ViewModel
+using (var _context = new AppDbContext())
+{
+    var products = await _context.Products.Select(x=> new ProductDto
+    {
+        CategoryId = x.Category.Id,
+        CategoryName= x.Category.Name,
+        ProductId = x.Id,
+        ProductName = x.Name,
+        ProductPrice = x.Price,
+    }).ToListAsync();
+    products.ForEach(x =>
+    {
+        Console.WriteLine($"CategoryId: {x.CategoryId}, CategoryName: {x.CategoryName}, ProductId: {x.ProductId}, ProductName: {x.ProductName}, ProductPrice: {x.ProductPrice}");
+    });
+    Console.WriteLine("\n");
+
+    var categories = await _context.Categories.Select(x => new ProductDto2
+    {
+        CategoryId = x.Id,
+        CategoryName = x.Name,
+        ProductNames = String.Join(",", x.Products.Select(x => x.Name)),
+        TotalPrice = x.Products.Sum(x => x.Price)
+
+    }).Where(x => x.TotalPrice > 100).OrderBy(x => x.TotalPrice).ToListAsync();
+    categories.ForEach(x =>
+    {
+        Console.WriteLine($"CategoryId: {x.CategoryId}, CategoryName: {x.CategoryName}, ProductName: {x.ProductNames}, TotalPrice: {x.TotalPrice}");
+    });
+    Console.WriteLine("\n");
+}
+#elif DtoOrViewModelAutoMapper //AutoMapper ile entityleri otomatik eşitleme
+using (var _context = new AppDbContext())
+{
+    //Automapper ile maplemek için önce Product datası komple çekilir ardından mapleme işlemi yapılır. Bu da belli yerlerde dez avantajdır.
+    var products = await _context.Products.Include(x=>x.Category).Include(x=>x.ProductFeature).ToListAsync();
+    var productDto = ObjectMapper.Mapper.Map<List<ProductDtoWithAutoMapper>>(products);
+    productDto.ForEach(x =>
+    {
+        Console.WriteLine($"categoryId: {x.Category.Id}, CAtegoryName: {x.Category.Name}, ProductId: {x.Id}, ProductName: {x.Name}, Price: {x.Price}");
+    });
+
+    Console.WriteLine("\n");
+
+    //Sadece AutoMapper içerisinde ki propertyleri çekmek istediğimizde ise aşağıdaki yolu izleriz.
+    //ProjectTo methodu ile sadece MapperDtosunun içerisinde bulunanları çekecek şekilde sql sorgusu oluşturulur ve Permormasta iyileştirme sağlar.
+    var result =  await _context.Products.ProjectTo<ProductDtoWithAutoMapper>(ObjectMapper.Mapper.ConfigurationProvider).ToListAsync();
+    result.ForEach(x =>
+    {
+        Console.WriteLine($"CategoryId: {x.Category.Id}, CategoryName: {x.Category.Name}, ProductId: {x.Id}, ProductName: {x.Name}");
     });
 }
 #endif
