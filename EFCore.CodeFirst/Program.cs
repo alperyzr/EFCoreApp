@@ -1,6 +1,6 @@
 ﻿
 //#define ile bir değişken tanımlamamıza ve aşağıdaki if komutları ile hangi using in çalışması gerektiğinin kontrolü yapılr
-#define DtoOrViewModelAutoMapper
+#define Transactions
 
 using AutoMapper.QueryableExtensions;
 using EFCore.CodeFirst.DataAccessLayer;
@@ -1005,6 +1005,33 @@ using (var _context = new AppDbContext())
     {
         Console.WriteLine($"CategoryId: {x.Category.Id}, CategoryName: {x.Category.Name}, ProductId: {x.Id}, ProductName: {x.Name}");
     });
+}
+#elif Transactions
+using (var _context = new AppDbContext())
+{
+    //Doğru Çalışan Kısım
+    var category = new Category() { Name = "Telefonlar" };
+    _context.Categories.Add(category);
+
+    var product = _context.Products.FirstOrDefault();
+    product.Name = "Transaction İle Güncellendi";
+
+    _context.SaveChanges();
+
+    Console.WriteLine($"{category.Id +" "+ category.Name +" "+ category.IsActive}");
+
+    //Hata Verecek Kısım
+    //CategoryId 10 olmayan kayıt olkmadığı için kod hata verecektir ve transaction durdurulacaktır
+    var category2 = new Category() { Name = "Telefonlar" };
+    _context.Categories.Add(category2);
+
+    var product2 = _context.Products.FirstOrDefault();
+    product2.CategoryId = 10;
+    product2.Name = "Hata Verdiği İçin Güncellenmedi";
+
+    _context.SaveChanges();
+
+    Console.WriteLine($"{category.Id + " " + category.Name + " " + category.IsActive}");
 }
 #endif
 
