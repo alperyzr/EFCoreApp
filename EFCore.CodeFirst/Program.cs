@@ -1009,29 +1009,36 @@ using (var _context = new AppDbContext())
 #elif Transactions
 using (var _context = new AppDbContext())
 {
-    //Doğru Çalışan Kısım
-    var category = new Category() { Name = "Telefonlar" };
-    _context.Categories.Add(category);
 
-    var product = _context.Products.FirstOrDefault();
-    product.Name = "Transaction İle Güncellendi";
+    //_context.Database.BeginTransaction() methodu bir transaction olduğunu belirtir.
+    //Bu kod bloğu içerisinde istediğimiz kadar SaveChanges kullanarabilirz.
+    //transaction.Commit() methodu çalışana kadar herhangi bir SaveChanges çalışmazsa bütün işlemler EFCore tarafında geri alınır.
+    using (var transaction = _context.Database.BeginTransaction())
+    {
+        var category = new Category()
+        {
+            Name = "Bilgisayar"
+        };
 
-    _context.SaveChanges();
+        _context.Categories.Add(category);
+        _context.SaveChanges();
 
-    Console.WriteLine($"{category.Id +" "+ category.Name +" "+ category.IsActive}");
+        Product product = new Product()
+        {
+            Name = "Kılıf",
+            Price = 100,
+            Stock = 200,
+            Barcode = 123,
+            DiscountPrice = 100,
+            CategoryId = category.Id
+        };
 
-    //Hata Verecek Kısım
-    //CategoryId 10 olmayan kayıt olkmadığı için kod hata verecektir ve transaction durdurulacaktır
-    var category2 = new Category() { Name = "Telefonlar" };
-    _context.Categories.Add(category2);
+        _context.Products.Add(product);
+        _context.SaveChanges();
+        transaction.Commit();
+    }
 
-    var product2 = _context.Products.FirstOrDefault();
-    product2.CategoryId = 10;
-    product2.Name = "Hata Verdiği İçin Güncellenmedi";
-
-    _context.SaveChanges();
-
-    Console.WriteLine($"{category.Id + " " + category.Name + " " + category.IsActive}");
+    
 }
 #endif
 
