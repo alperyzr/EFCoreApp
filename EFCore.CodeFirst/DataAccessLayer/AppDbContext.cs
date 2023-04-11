@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Data.Common;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -15,9 +16,17 @@ namespace EFCore.CodeFirst.DataAccessLayer
     public class AppDbContext : DbContext
     {
         private readonly int Barcode;
-        public AppDbContext(int barcode)
+        private DbConnection _dbConnection;
+
+        public AppDbContext(int barcode, DbConnection dbConnection)
         {
-            Barcode= barcode;
+            Barcode = barcode;
+            _dbConnection = dbConnection;
+        }
+
+        public AppDbContext(DbConnection dbConnection)
+        {           
+            _dbConnection = dbConnection;
         }
 
         public AppDbContext()
@@ -52,17 +61,26 @@ namespace EFCore.CodeFirst.DataAccessLayer
         //Nugget paketleri yüklenmelidir ve aşağıdaki yol izlenmelidir.
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            //Console alt yapısı olduğu için bu method çağrılır. MVC ve CORE projelerinde otomatik algılanır
-            DbContextInitializer.Build();
+            if (_dbConnection == default(DbConnection))
+            {
+                //Console alt yapısı olduğu için bu method çağrılır. MVC ve CORE projelerinde otomatik algılanır
+                DbContextInitializer.Build();
 
-            //appsettings ten okumak için kullanılır
-            //LogTo methodu da lazyLoading ile beraber yapılan işlemlerde Console log bilgilerini yazdırmak için kullanılır
-            //UseLazyLoadingProxies methodu kurulan nugget paketten sonra appsettingse eklenerek lazyLoading yapmamıza imkan tanır
-           
-            //optionsBuilder.LogTo(Console.WriteLine, LogLevel.Information).UseLazyLoadingProxies().UseSqlServer(DbContextInitializer.Configuration.GetConnectionString("SqlCon"));
-            optionsBuilder.UseSqlServer(DbContextInitializer.Configuration.GetConnectionString("SqlCon"));
+                //appsettings ten okumak için kullanılır
+                //LogTo methodu da lazyLoading ile beraber yapılan işlemlerde Console log bilgilerini yazdırmak için kullanılır
+                //UseLazyLoadingProxies methodu kurulan nugget paketten sonra appsettingse eklenerek lazyLoading yapmamıza imkan tanır
 
-            //optionsBuilder.LogTo(Console.WriteLine, LogLevel.Information).UseSqlServer(DbContextInitializer.Configuration.GetConnectionString("SqlCon"));
+                //optionsBuilder.LogTo(Console.WriteLine, LogLevel.Information).UseLazyLoadingProxies().UseSqlServer(DbContextInitializer.Configuration.GetConnectionString("SqlCon"));
+                optionsBuilder.UseSqlServer(DbContextInitializer.Configuration.GetConnectionString("SqlCon"));
+
+
+                //optionsBuilder.LogTo(Console.WriteLine, LogLevel.Information).UseSqlServer(DbContextInitializer.Configuration.GetConnectionString("SqlCon"));
+            }
+            else
+            {
+                optionsBuilder.UseSqlServer(_dbConnection);
+            }
+
 
         }
 
@@ -76,7 +94,7 @@ namespace EFCore.CodeFirst.DataAccessLayer
             //Name alanının required olduğu belirtilitr
             //100 karakter sabit bir değer alması için İsFİxed Methodu kullanılır
             modelBuilder.Entity<Product>().Property(x => x.Name).IsRequired()/*.HasMaxLength(100).IsFixedLength()*/;
-            
+
 
             //decimal değerin toplam kaç karakter olup, virgülden sonra kaç karakter alacağını belirten fluentAPI tarafındaki gösterimi
             modelBuilder.Entity<Product>().Property(x => x.Price).HasPrecision(18, 2);
@@ -89,7 +107,7 @@ namespace EFCore.CodeFirst.DataAccessLayer
             //Restrict enumı 1 id li kategoride product varsa kategoriyi silmeye izin vermez
             //SetNull enumu product tablosundaki kategori Idleri null a çeker
             //NoAction enum ı ise hiç bir şey yapmamasını, sql tarafında kullanıcının halledeceğini belirtir
-            modelBuilder.Entity<Category>().HasMany(x => x.Products).WithOne(x=>x.Category).HasForeignKey(x=>x.CategoryId).OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<Category>().HasMany(x => x.Products).WithOne(x => x.Category).HasForeignKey(x => x.CategoryId).OnDelete(DeleteBehavior.Restrict);
 
             //ProductFeature tablosundaki Id alanı hem Primary Key, hemde Foreign Key olarak ayarladık.
             //Böylece İlgili Product İd si olmayan bir kayıt eklenemez ve fazla kolon kullanımından kurtulmuş olduk
@@ -118,7 +136,7 @@ namespace EFCore.CodeFirst.DataAccessLayer
 
             //[Unicode(false)] attributeünün FluentApıu tarafındaki karşığı, ASCII karakterleri için kullanılır. Türkçe karakter kabul etmez
             //Tip olarak artık varchar sayılır ve 2 Byte verine 1 bytelık yer kaplar           
-            modelBuilder.Entity<Product>().Property(x=>x.Test).IsUnicode(false);
+            modelBuilder.Entity<Product>().Property(x => x.Test).IsUnicode(false);
 
             //[Column(TypeName="varchar(200)")] attribüteünün FluenTAPI tarafında kullanımı
             modelBuilder.Entity<Product>().Property(x => x.Url).HasColumnType("nvarchar(MAX)");
@@ -127,15 +145,15 @@ namespace EFCore.CodeFirst.DataAccessLayer
             //Product tablosundaki Name alanına göre indexleme yaparak Sql tarafında daha hızlı sorgular ve sonuçlar almamızı sağlar
             //IncluedeProperties methodu ise bu index tablosuna sorgu atarken price, stock, ve url propertylerininde hızlı bir şekilde gelmesini istiyorsam 
             //Bu şekilde ekliyoruz ve IndeTablosunda Where(x=>x.Name =="Alper").Select(x=>new{x.Price,x.Stock}) dersem hızlı bir şekilde bu kolonları alırım
-            modelBuilder.Entity<Product>().HasIndex(x => x.Name).IncludeProperties(x => new { x.Price, x.Stock, x.Url});
-            modelBuilder.Entity<Product>().HasIndex(x => x.Price).IncludeProperties(x => new {x.Name,x.Stock,x.Url});
+            modelBuilder.Entity<Product>().HasIndex(x => x.Name).IncludeProperties(x => new { x.Price, x.Stock, x.Url });
+            modelBuilder.Entity<Product>().HasIndex(x => x.Price).IncludeProperties(x => new { x.Name, x.Stock, x.Url });
 
             //ComposedIndex (tek Where şartında birden fazla property kullandığımız zamanda hızlı sonuç gelmesini istiyorsak) FluentAPI tarafındaki şekli
-            modelBuilder.Entity<Product>().HasIndex(x => new{ x.Name , x.Price }).IncludeProperties(x => new {x.Stock,x.Url});
+            modelBuilder.Entity<Product>().HasIndex(x => new { x.Name, x.Price }).IncludeProperties(x => new { x.Stock, x.Url });
 
             //HasCheckConstraint methodu sayesinde bir kural belirtiriz. Bu kurala ilk olarak isim veririz, ardından ilgili kuralı veririz
             //Bu kuralda Her zaman fiyatın indirimli fiyattan büyük olması gerektiğini belirttik
-            modelBuilder.Entity<Product>().HasCheckConstraint("PriceDiscountCheck" , "[Price]>[DiscountPrice]");
+            modelBuilder.Entity<Product>().HasCheckConstraint("PriceDiscountCheck", "[Price]>[DiscountPrice]");
 
 
             //ToSqlQeury custom sorgular için kullanılır. _context.ToList eddiğimiz gibi bu sorgu arkada çalışır ve tek bir yerden kontrol etmiş oluruz
@@ -146,7 +164,7 @@ namespace EFCore.CodeFirst.DataAccessLayer
             modelBuilder.Entity<ProductWithFeatureView>().ToView("productWithFeature");
 
             modelBuilder.Entity<Product>().Property(x => x.IsActive).HasDefaultValue(true);
-            modelBuilder.Entity<Product>().Property(x=>x.IsDeleted).HasDefaultValue(false);
+            modelBuilder.Entity<Product>().Property(x => x.IsDeleted).HasDefaultValue(false);
             modelBuilder.Entity<Product>().Property(x => x.CreatedDate).HasDefaultValue(DateTime.Now);
 
             //Product nesnesi için Daima IsActive true çekmek istersek global olarak bruada böyle tanımlıyoruz ve çağırdığımız yerde ToList dediğimiz zaman otomatik olarak
@@ -162,7 +180,7 @@ namespace EFCore.CodeFirst.DataAccessLayer
             modelBuilder.Entity<ProductWithFeatureView>().ToFunction("fc_getProducts");
 
             //Geriye tek bir deper dönen (Category Idsine göre ProductCountlar) function tanımlama
-            modelBuilder.HasDbFunction(typeof(AppDbContext).GetMethod(nameof(GetProductCountWithCategoryId), new[] { typeof(int) }) ! ).HasName("fc_getProductCountWithCategoryId");
+            modelBuilder.HasDbFunction(typeof(AppDbContext).GetMethod(nameof(GetProductCountWithCategoryId), new[] { typeof(int) })!).HasName("fc_getProductCountWithCategoryId");
 
             base.OnModelCreating(modelBuilder);
         }

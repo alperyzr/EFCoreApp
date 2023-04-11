@@ -1,6 +1,6 @@
 ﻿
 //#define ile bir değişken tanımlamamıza ve aşağıdaki if komutları ile hangi using in çalışması gerektiğinin kontrolü yapılr
-#define Transactions
+#define Isolation
 
 using AutoMapper.QueryableExtensions;
 using EFCore.CodeFirst.DataAccessLayer;
@@ -9,12 +9,15 @@ using EFCore.CodeFirst.Mappers;
 using EFCore.CodeFirst.Models.DTO;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.Extensions.Configuration;
 using System.Drawing;
 using System.Net.NetworkInformation;
 using System.Security.Cryptography;
 
 //DbContext in appsettingsten okunması için classın Build methodu çağrılır.
 DbContextInitializer.Build();
+var connection = new SqlConnection(DbContextInitializer.Configuration.GetConnectionString("SqlCon"));
 
 
 
@@ -1030,7 +1033,8 @@ using (var _context = new AppDbContext())
             Stock = 200,
             Barcode = 123,
             DiscountPrice = 100,
-            CategoryId = category.Id
+            CategoryId = category.Id,
+            Url = "test-uri"
         };
 
         _context.Products.Add(product);
@@ -1039,6 +1043,57 @@ using (var _context = new AppDbContext())
     }
 
     
+}
+
+#elif MultipleDbContextInstance
+using (var _context = new AppDbContext(connection))
+{
+    using (var transaction = _context.Database.BeginTransaction())
+    {
+        var category = new Category()
+        {
+            Name = "Bilgisayar"
+        };
+
+        _context.Categories.Add(category);
+        _context.SaveChanges();
+
+        Product product = new Product()
+        {
+            Name = "Kılıf",
+            Price = 100,
+            Stock = 200,
+            Barcode = 123,
+            DiscountPrice = 99,
+            CategoryId = category.Id,
+            Url = "test-uri"
+        };
+
+        _context.Products.Add(product);
+        _context.SaveChanges();
+
+        using (var dbContext2 = new AppDbContext(connection))
+        {
+            //2. db instanceımızında bir transaction kullancağını belirtiyoruz ve yukarıdaki transaction bloğuna bağlıyoruz
+            dbContext2.Database.UseTransaction(transaction.GetDbTransaction());
+            var productFeature = new ProductFeature()
+            {
+                Id = product.Id,
+                Color = "red",
+                Width = 100,
+                Height = 100,
+            };
+
+            dbContext2.ProductFeatures.Add(productFeature);
+            dbContext2.SaveChanges();
+        }
+
+        transaction.Commit();
+    }
+}
+#elif Isolation //
+using (var _context = new AppDbContext(connection))
+{
 }
 #endif
 
