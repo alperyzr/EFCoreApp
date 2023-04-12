@@ -1091,9 +1091,57 @@ using (var _context = new AppDbContext(connection))
         transaction.Commit();
     }
 }
-#elif Isolation //
-using (var _context = new AppDbContext(connection))
+#elif Isolation
+using (var _context = new AppDbContext())
 {
+    //Isolationun çözdüğü 4 farklı Veri Tutarsızlığı mevcuttut. Aşağıdaki yçntemler ile tutarsız veri senaryolarından kurtulmamızı sağlar.
+
+    //1.
+    //LostUpdate aynı anda devree giren birden fazla transactionun sistem tarafından biri seçilir ve diğeri daha sonra yapılır.
+    //Örneğin Product tablosunda Id si 1 olan kayıdın Price alanını ilk transaction 100, ikinci transaction 200 olarak güncellemeye çalışıyor diyelim.
+    //Aynı anda başlıyorlarsa sistem hangsini alacağını bilemez ve bir transaction ezilir. Buna LastUpdate denir.
+
+    //2.
+    //DirtyRead (Kirli Okuma)
+    //Bir transactionda product güncelleme işlemi yapılıyor ve transaction commit edilmeden önce tüm productların listesi tekrar çekiliyor gibi bir senaryo olursa
+    //Ve güncellenecek datanın eski hali ile toList yapılırsa bu DirtyRead(Kirli Okuma) olur.
+
+    //3.
+    //NonrepetableReads 
+    //Bir data okunurken, başka bir transaction araya girip güncelleme işlemi yapııyor ve sonrasından tekrar Tolist yapılıyorsa
+    //Liste eleman sayısı aynı, fakat elemanlar arasında değişiklik olduğu için NonrepetableReads olarak adlandırılır.
+
+    //4.
+    //PhantomReads
+    //NonrepetableReads ile aynı çalışır. Bir liste çağrıldıktan sonra araya bir transaction girip Add işlemi yapıyorsa ve sonradan tekrar liste çağrılıyorsa
+    //Kayıt sayısı uyuşmayacağından PhantomReads olarak anlandırılır
+
+
+    //ReadUncommitted olduğu zaman güncel transaction içerisinde okuma yapılırken, Başka bir transaction işlemi Update/Delete Gerçekleştirebilir.
+    //Ancak bir transaction güncelleme yaparken, başka bir transaction aynı satırda güncelleme yapamaz.
+    using (var transaction = _context.Database.BeginTransaction(System.Data.IsolationLevel.ReadUncommitted))
+    {
+        //SqlIsolotionQuery dosyasındada görüleceği üzere Id si 3 olan product güncellenmeye çalışıyor. Burada sorgudada Firs ile gelen Product da 3 Id li product.
+        //Dolayısıyla iki transactionuda çalıştırdığımız zaman biri bitmeden diğeri tamamlanmıyor.
+        var getProduct = _context.Products.First();
+        getProduct.Price = 3000;
+
+        Product product = new Product()
+        {
+            Name = "TransactionProduct",
+            Barcode = 123,
+            CategoryId = 1,
+            Price = 100,
+            DiscountPrice = 99,
+            Url = "transaction-product",
+        };
+        _context.Products.Add(product);
+        _context.SaveChanges();
+
+        //transaction Commitlenmeden önce BreakPoint ile durdurup, ana dizindeki SqlIsolationQuery içeriğine bakılıp, db de execute edilirse değişen değerler gözülecektir.
+        transaction.Commit();
+    }
+
 }
 #endif
 
