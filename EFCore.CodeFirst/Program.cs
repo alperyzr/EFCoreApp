@@ -1119,6 +1119,7 @@ using (var _context = new AppDbContext())
 
     //ReadUncommitted olduğu zaman güncel transaction içerisinde okuma yapılırken, Başka bir transaction işlemi Update/Delete Gerçekleştirebilir.
     //Ancak bir transaction güncelleme yaparken, başka bir transaction aynı satırda güncelleme yapamaz.
+    //ReadUncommitted seçilirse, NonrepetableReads ve PhantomReads yol açar.
     using (var transaction = _context.Database.BeginTransaction(System.Data.IsolationLevel.ReadUncommitted))
     {
         //SqlIsolotionQuery dosyasındada görüleceği üzere Id si 3 olan product güncellenmeye çalışıyor. Burada sorgudada Firs ile gelen Product da 3 Id li product.
