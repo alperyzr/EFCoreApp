@@ -1,6 +1,6 @@
 ﻿
 //#define ile bir değişken tanımlamamıza ve aşağıdaki if komutları ile hangi using in çalışması gerektiğinin kontrolü yapılr
-#define Transactions
+#define MultipleDbContextInstance
 
 using AutoMapper.QueryableExtensions;
 using EFCore.CodeFirst.DataAccessLayer;
@@ -1029,8 +1029,9 @@ using (var _context = new AppDbContext())
             Price = 100,
             Stock = 200,
             Barcode = 123,
-            DiscountPrice = 100,
-            CategoryId = category.Id
+            DiscountPrice = 99,
+            CategoryId = category.Id,
+            Url = "test-url"
         };
 
         _context.Products.Add(product);
@@ -1039,6 +1040,11 @@ using (var _context = new AppDbContext())
     }
 
     
+}
+#elif MultipleDbContextInstance
+using (var _context = new AppDbContext())
+{
+
 }
 #endif
 
