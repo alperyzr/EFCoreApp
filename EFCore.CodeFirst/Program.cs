@@ -1094,7 +1094,17 @@ using (var _context = new AppDbContext())
         var getProduct = _context.Products.First();
         getProduct.Price = 3000;
 
-    
+
+    }
+
+
+    //IsollationLevel RepeatableRead seçildiği durumda
+    //Başka transaction aşağıda okunan datada değişiklik yapamaz
+    using(var transaction = _context.Database.BeginTransaction(System.Data.IsolationLevel.RepeatableRead))
+    {
+        var product = _context.Products.Take(2).ToList();
+        transaction.Commit();
+    }
 }
 #endif
 
