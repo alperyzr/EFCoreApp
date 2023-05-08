@@ -1,6 +1,6 @@
 ﻿
 //#define ile bir değişken tanımlamamıza ve aşağıdaki if komutları ile hangi using in çalışması gerektiğinin kontrolü yapılr
-#define MultipleDbContextInstance
+#define Isolation
 
 using AutoMapper.QueryableExtensions;
 using EFCore.CodeFirst.DataAccessLayer;
@@ -9,12 +9,15 @@ using EFCore.CodeFirst.Mappers;
 using EFCore.CodeFirst.Models.DTO;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.Extensions.Configuration;
 using System.Drawing;
 using System.Net.NetworkInformation;
 using System.Security.Cryptography;
 
 //DbContext in appsettingsten okunması için classın Build methodu çağrılır.
 DbContextInitializer.Build();
+var connection = new SqlConnection(DbContextInitializer.Configuration.GetConnectionString("SqlCon"));
 
 
 
@@ -1029,22 +1032,69 @@ using (var _context = new AppDbContext())
             Price = 100,
             Stock = 200,
             Barcode = 123,
-            DiscountPrice = 99,
-            CategoryId = category.Id,
-            Url = "test-url"
+            DiscountPrice = 100,
+            CategoryId = category.Id
         };
 
         _context.Products.Add(product);
         _context.SaveChanges();
+
+        using (var dbContext2 = new AppDbContext(connection))
+        {
+            //2. db instanceımızında bir transaction kullancağını belirtiyoruz ve yukarıdaki transaction bloğuna bağlıyoruz
+            dbContext2.Database.UseTransaction(transaction.GetDbTransaction());
+            var productFeature = new ProductFeature()
+            {
+                Id = product.Id,
+                Color = "red",
+                Width = 100,
+                Height = 100,
+            };
+
+            dbContext2.ProductFeatures.Add(productFeature);
+            dbContext2.SaveChanges();
+        }
+
         transaction.Commit();
     }
-
-    
 }
-#elif MultipleDbContextInstance
+#elif Isolation
 using (var _context = new AppDbContext())
 {
+    //Isolationun çözdüğü 4 farklı Veri Tutarsızlığı mevcuttut. Aşağıdaki yçntemler ile tutarsız veri senaryolarından kurtulmamızı sağlar.
 
+    //1.
+    //LostUpdate aynı anda devree giren birden fazla transactionun sistem tarafından biri seçilir ve diğeri daha sonra yapılır.
+    //Örneğin Product tablosunda Id si 1 olan kayıdın Price alanını ilk transaction 100, ikinci transaction 200 olarak güncellemeye çalışıyor diyelim.
+    //Aynı anda başlıyorlarsa sistem hangsini alacağını bilemez ve bir transaction ezilir. Buna LastUpdate denir.
+
+    //2.
+    //DirtyRead (Kirli Okuma)
+    //Bir transactionda product güncelleme işlemi yapılıyor ve transaction commit edilmeden önce tüm productların listesi tekrar çekiliyor gibi bir senaryo olursa
+    //Ve güncellenecek datanın eski hali ile toList yapılırsa bu DirtyRead(Kirli Okuma) olur.
+
+    //3.
+    //NonrepetableReads 
+    //Bir data okunurken, başka bir transaction araya girip güncelleme işlemi yapııyor ve sonrasından tekrar Tolist yapılıyorsa
+    //Liste eleman sayısı aynı, fakat elemanlar arasında değişiklik olduğu için NonrepetableReads olarak adlandırılır.
+
+    //4.
+    //PhantomReads
+    //NonrepetableReads ile aynı çalışır. Bir liste çağrıldıktan sonra araya bir transaction girip Add işlemi yapıyorsa ve sonradan tekrar liste çağrılıyorsa
+    //Kayıt sayısı uyuşmayacağından PhantomReads olarak anlandırılır
+
+
+    //ReadUncommitted olduğu zaman güncel transaction içerisinde okuma yapılırken, Başka bir transaction işlemi Update/Delete Gerçekleştirebilir.
+    //Ancak bir transaction güncelleme yaparken, başka bir transaction aynı satırda güncelleme yapamaz.
+    //ReadUncommitted seçilirse, NonrepetableReads ve PhantomReads yol açar.
+    using (var transaction = _context.Database.BeginTransaction(System.Data.IsolationLevel.ReadUncommitted))
+    {
+        //SqlIsolotionQuery dosyasındada görüleceği üzere Id si 3 olan product güncellenmeye çalışıyor. Burada sorgudada Firs ile gelen Product da 3 Id li product.
+        //Dolayısıyla iki transactionuda çalıştırdığımız zaman biri bitmeden diğeri tamamlanmıyor.
+        var getProduct = _context.Products.First();
+        getProduct.Price = 3000;
+
+    
 }
 #endif
 
