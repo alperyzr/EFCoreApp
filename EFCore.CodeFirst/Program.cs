@@ -1105,6 +1105,32 @@ using (var _context = new AppDbContext())
         var product = _context.Products.Take(2).ToList();
         transaction.Commit();
     }
+
+
+
+    //SnapSHot
+    //En Tutarlı ve Güvenli yöntem SnapShot yöntemi, Araya Insert, update, delete dahi girse bütün transactionları gerçekleştirir
+    //SnapShot Yöntemini açabilmek için öncelikle SQL tarafında aşağıdaki sorgu yazılması gerekmektedir:
+    //=================================================
+    //alter database DbAdı set ALLOW_SNAPSHOT_ISOLATION on
+    //komutunu yazarak çalıştırdıktan sonra EFCore tarafında SnapShot olarak kullanabiliriz
+    using (var transaction = _context.Database.BeginTransaction(System.Data.IsolationLevel.Snapshot))
+    {
+        //İlk etapda db de kaç tane product varsa onları çeker
+        //örneğin 5 kjayıt geldi
+        var products = _context.Products.AsNoTracking().ToList();
+
+
+        // Bussiness kodları ..........
+
+        //Başka bir transaction bloğunda insert update işlemleri yaptığımızı var sayalım
+        //5 kayıt daha eklkedik ve toplam product 10 oldu
+        //product2 de yine aynı şekilde 5 kayıt çekecektir.
+        //SnapShot başka transaction içerisinde Insert update ve delete izin verir ancak
+        //Kendi transaction bloğunda direkt çektiği data neyse onunla beraber çalışır
+        var products2 = _context.Products.AsNoTracking().ToList();
+        transaction.Commit();
+    }
 }
 #endif
 
